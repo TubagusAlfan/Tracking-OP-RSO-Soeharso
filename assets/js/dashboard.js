@@ -249,7 +249,7 @@ function generateLink() {
     );
     return;
   }
-  const trackingUrl = `http://127.0.0.1:5500/tracking.html?token=${patient.token}`;
+  const trackingUrl = `https://ortojejak.netlify.app/tracking.html?token=${patient.token}`;;
   prompt("Salin tautan ini untuk dibagikan ke pasien:", trackingUrl);
 }
 
@@ -280,3 +280,4 @@ if (logoutEl) {
     }
   });
 }
+
