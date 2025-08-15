@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <title>SIMRS RSO - Pelayanan Penunjang</title>
+    <style>
+      table.layout-fixed {
+        table-layout: fixed;
+        width: 100%;
+      }
+      table th,
+      table td {
+        padding: 0.5rem;
+        text-align: left;
+        border: 1px solid #ccc;
+        vertical-align: top;
+      }
+      table th {
+        background-color: #e5e7eb;
+      }
+      td#exam {
+        white-space: pre-wrap;
+        word-wrap: break-word;
+      }
+    </style>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="bg-green-100 font-sans">
+    <header class="bg-green-300 p-4 shadow">
+      <div class="flex justify-between items-center">
+        <div class="text-xl font-bold">TRACKING ORTOTIK PROSTETIK SOEHARSO</div>
+        <nav class="space-x-4">
+          <a href="#" class="text-sm">HOME</a>
+          <a href="#" class="text-sm">VISI & MISI RS</a>
+          <a href="#" class="text-sm">INFORMASI</a>
+          <a href="#" class="text-sm">ASUHAN KEPERAWATAN</a>
+          <a href="#" class="text-sm">PELAYANAN PENUNJANG</a>
+          <a href="#" id="logoutLink" class="text-sm">LOGOUT</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="p-4">
+      <div class="grid grid-cols-3 gap-4">
+        <div class="col-span-1">
+          <div class="bg-white shadow rounded p-4">
+            <div class="flex justify-between items-center mb-2">
+              <h2 class="font-semibold">Data List Pasien</h2>
+              <button
+                onclick="showForm()"
+                class="bg-blue-500 text-white px-2 py-1 text-sm rounded"
+              >
+                Tambah
+              </button>
+            </div>
+            <table class="w-full text-sm border">
+              <thead>
+                <tr class="bg-gray-200">
+                  <th style="width: 5%">No</th>
+                  <th style="width: 20%">No. Registrasi</th>
+                  <th style="width: 40%">Nama Pasien</th>
+                  <th style="width: 35%">Status Progres</th>
+                </tr>
+              </thead>
+              <tbody id="patient-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="col-span-2">
+          <div class="bg-white shadow rounded p-4">
+            <h2 class="font-semibold mb-2">Progres Alat</h2>
+            <div class="mb-4">
+              <p><strong>Nama Alat:</strong> <span id="exam"></span></p>
+            </div>
+            <table class="layout-fixed mb-2 text-sm border">
+              <thead>
+                <tr>
+                  <th style="width: 5%">No</th>
+                  <th style="width: 15%">Tanggal</th>
+                  <th style="width: 40%">Keterangan Tahapan</th>
+                  <th style="width: 20%">Tahapan</th>
+                  <th style="width: 10%">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="tahapan-body"></tbody>
+            </table>
+            <div class="flex gap-2">
+              <button
+                onclick="updateProgressStatus()"
+                class="bg-green-500 text-white px-4 py-1 rounded"
+              >
+                Simpan
+              </button>
+              <button
+                onclick="addRow()"
+                class="bg-blue-300 text-white px-4 py-1 rounded flex items-center gap-1"
+              >
+                <span>➕</span>Tambah
+              </button>
+              <button
+                id="generate-link-btn"
+                onclick="generateLink()"
+                class="bg-purple-500 text-white px-4 py-1 rounded hidden"
+              >
+                Generate Link
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <div
+      id="form-popup"
+      class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center hidden"
+    >
+      <div class="bg-white p-6 rounded shadow w-96">
+        <h3 class="text-lg font-bold mb-4">Tambah Pasien</h3>
+        <div class="mb-2">
+          <label class="block text-sm">No. Registrasi</label>
+          <input type="text" id="regInput" class="w-full border px-2 py-1" />
+        </div>
+        <div class="mb-2">
+          <label class="block text-sm">Nama Pasien</label>
+          <input type="text" id="nameInput" class="w-full border px-2 py-1" />
+        </div>
+        <div class="mb-4">
+          <label class="block text-sm">Nama Alat</label>
+          <input type="text" id="examInput" class="w-full border px-2 py-1" />
+        </div>
+        <div class="flex justify-end gap-2">
+          <button
+            onclick="hideForm()"
+            class="bg-gray-400 text-white px-4 py-1 rounded"
+          >
+            Batal
+          </button>
+          <button
+            onclick="addPatient()"
+            class="bg-green-500 text-white px-4 py-1 rounded"
+          >
+            Simpan
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Load config global sebelum modul -->
+    <script src="config-firebase.js"></script>
+    <script type="module" src="assets/js/dashboard.js"></script>
+  </body>
+</html>
