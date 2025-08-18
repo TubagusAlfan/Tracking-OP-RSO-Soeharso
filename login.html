@@ -9,7 +9,7 @@
       content="Mark Otto, Jacob Thornton, and Bootstrap contributors"
     />
     <meta name="generator" content="Astro v5.9.2" />
-    <title>SIMETRIS-RSO</title>
+    <title>ORTOJEJAK</title>
 
     <!-- Bootstrap core CSS -->
     <link
@@ -92,10 +92,34 @@
       .bd-mode-toggle .dropdown-menu .active .bi {
         display: block !important;
       }
+      /* Added centered logo + blurred background (same image as landing page) */
+      body.auth-bg {
+        position: relative;
+        min-height: 100vh;
+        background: url("landing_page/assets/img/hero-carousel/latar-belakang-rso-1.jpg")
+          center / cover no-repeat fixed;
+      }
+      body.auth-bg::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        background: rgba(255, 255, 255, 0.6);
+      }
+      main.form-signin {
+        /* ensure content above overlay */
+        position: relative;
+        z-index: 1;
+      }
+      .form-signin img {
+        /* center logo */
+        display: block;
+        margin: 0 auto 1rem;
+      }
     </style>
   </head>
-
-  <body class="d-flex align-items-center py-4 bg-body-tertiary">
+  <body class="d-flex align-items-center py-4 bg-body-tertiary auth-bg">
     <svg xmlns="http://www.w3.org/2000/svg" class="d-none">
       <symbol id="check2" viewBox="0 0 16 16">
         <path
@@ -196,7 +220,7 @@
         <img
           class="mb-4"
           src="assets/brand/Logo RSO Soeharso Surakarta.png"
-          alt=""
+          alt="RSO Logo"
           width="72"
           height="72"
         />
