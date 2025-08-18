@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="id" data-bs-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Profil Pengguna</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://www.gstatic.com/firebasejs/12.1.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.1.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore-compat.js"></script>
+    <script src="config-firebase.js"></script>
+    <style>
+      /* Banner disamakan dengan warna panel navbar (Tailwind green-300) */
+      .profile-banner {
+        background: #86efac;
+      }
+    </style>
+  </head>
+  <body class="bg-gray-100 min-h-screen font-sans">
+    <header class="bg-green-300 p-4 shadow flex justify-between items-center">
+      <div class="text-lg font-semibold">
+        TRACKING ORTOTIK PROSTETIK SOEHARSO
+      </div>
+      <nav class="text-sm space-x-4">
+        <a href="dashboard.html" class="underline">Dashboard</a>
+        <a href="#" id="logoutBtn">Keluar</a>
+      </nav>
+    </header>
+
+    <main class="max-w-7xl mx-auto mt-4 px-4">
+      <div class="bg-white shadow rounded overflow-hidden">
+        <div id="banner" class="profile-banner h-40"></div>
+        <div class="p-6 flex flex-col sm:flex-row sm:items-center gap-6 -mt-16">
+          <div
+            class="w-32 h-32 sm:w-40 sm:h-40 rounded-full bg-gray-300 border-4 border-white flex items-center justify-center text-3xl sm:text-4xl font-semibold text-gray-600 shadow"
+          >
+            <span id="avatarInitial"></span>
+          </div>
+          <div class="flex-1">
+            <h1 id="profileName" class="text-3xl font-bold">-</h1>
+            <p id="profileEmail" class="text-gray-600">-</p>
+          </div>
+          <div>
+            <button
+              id="editBtn"
+              class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded text-sm"
+            >
+              Edit Profil
+            </button>
+          </div>
+        </div>
+        <div class="border-t p-6 grid grid-cols-1 md:grid-cols-3 gap-8 text-sm">
+          <div>
+            <h2 class="font-semibold text-lg mb-4">Informasi Pribadi</h2>
+            <dl class="space-y-4">
+              <div>
+                <dt class="text-gray-500">Nama Lengkap</dt>
+                <dd id="fullName">-</dd>
+              </div>
+              <div>
+                <dt class="text-gray-500">Email</dt>
+                <dd id="emailInfo">-</dd>
+              </div>
+              <div>
+                <dt class="text-gray-500">Nomor Telepon</dt>
+                <dd id="phone">-</dd>
+              </div>
+              <div>
+                <dt class="text-gray-500">Tanggal Lahir</dt>
+                <dd id="dob">-</dd>
+              </div>
+              <div>
+                <dt class="text-gray-500">Jenis Kelamin</dt>
+                <dd id="gender">-</dd>
+              </div>
+            </dl>
+          </div>
+          <div>
+            <h2 class="font-semibold text-lg mb-4">Informasi Medis</h2>
+            <dl class="space-y-4">
+              <div>
+                <dt class="text-gray-500">Golongan Darah</dt>
+                <dd id="blood">-</dd>
+              </div>
+              <div>
+                <dt class="text-gray-500">Tinggi Badan</dt>
+                <dd id="height">- <span class="text-gray-500">cm</span></dd>
+              </div>
+              <div>
+                <dt class="text-gray-500">Berat Badan</dt>
+                <dd id="weight">- <span class="text-gray-500">kg</span></dd>
+              </div>
+              <div>
+                <dt class="text-gray-500">Alergi</dt>
+                <dd id="allergy">-</dd>
+              </div>
+              <div>
+                <dt class="text-gray-500">Kondisi Medis</dt>
+                <dd id="condition">-</dd>
+              </div>
+            </dl>
+          </div>
+          <div>
+            <h2 class="font-semibold text-lg mb-4">Kontak Darurat</h2>
+            <dl class="space-y-4">
+              <div>
+                <dt class="text-gray-500">Nama</dt>
+                <dd id="emgName">-</dd>
+              </div>
+              <div>
+                <dt class="text-gray-500">Hubungan</dt>
+                <dd id="emgRelation">-</dd>
+              </div>
+              <div>
+                <dt class="text-gray-500">Nomor Telepon</dt>
+                <dd id="emgPhone">-</dd>
+              </div>
+              <div>
+                <dt class="text-gray-500">Email</dt>
+                <dd id="emgEmail">-</dd>
+              </div>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Modal Edit (Form) -->
+    <div
+      id="editModal"
+      class="hidden fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50"
+    >
+      <div
+        class="bg-white rounded shadow-lg p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto"
+      >
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="font-semibold text-lg">Edit Profil</h3>
+          <button
+            onclick="closeEdit()"
+            class="text-gray-500 hover:text-gray-700"
+          >
+            ✕
+          </button>
+        </div>
+        <form id="profileForm" class="grid md:grid-cols-3 gap-6 text-sm">
+          <fieldset class="space-y-3">
+            <legend class="font-semibold mb-1">Informasi Pribadi</legend>
+            <div>
+              <label class="block text-gray-500 mb-1">Nama Lengkap</label>
+              <input
+                id="inputFullName"
+                type="text"
+                class="w-full border rounded px-2 py-1"
+              />
+            </div>
+            <div>
+              <label class="block text-gray-500 mb-1">Nomor Telepon</label>
+              <input
+                id="inputPhone"
+                type="text"
+                class="w-full border rounded px-2 py-1"
+              />
+            </div>
+            <div>
+              <label class="block text-gray-500 mb-1">Tanggal Lahir</label>
+              <input
+                id="inputDob"
+                type="date"
+                class="w-full border rounded px-2 py-1"
+              />
+            </div>
+            <div>
+              <label class="block text-gray-500 mb-1">Jenis Kelamin</label>
+              <select id="selectGender" class="w-full border rounded px-2 py-1">
+                <option value="">-- Pilih --</option>
+                <option value="Laki-laki">Laki-laki</option>
+                <option value="Perempuan">Perempuan</option>
+              </select>
+            </div>
+          </fieldset>
+          <fieldset class="space-y-3">
+            <legend class="font-semibold mb-1">Informasi Medis</legend>
+            <div>
+              <label class="block text-gray-500 mb-1">Golongan Darah</label>
+              <input
+                id="inputBlood"
+                type="text"
+                class="w-full border rounded px-2 py-1"
+                placeholder="A / B / AB / O"
+              />
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-gray-500 mb-1">Tinggi (cm)</label>
+                <input
+                  id="inputHeight"
+                  type="number"
+                  class="w-full border rounded px-2 py-1"
+                />
+              </div>
+              <div>
+                <label class="block text-gray-500 mb-1">Berat (kg)</label>
+                <input
+                  id="inputWeight"
+                  type="number"
+                  class="w-full border rounded px-2 py-1"
+                />
+              </div>
+            </div>
+            <div>
+              <label class="block text-gray-500 mb-1">Alergi</label>
+              <input
+                id="inputAllergy"
+                type="text"
+                class="w-full border rounded px-2 py-1"
+              />
+            </div>
+            <div>
+              <label class="block text-gray-500 mb-1">Kondisi Medis</label>
+              <textarea
+                id="inputCondition"
+                rows="3"
+                class="w-full border rounded px-2 py-1"
+              ></textarea>
+            </div>
+          </fieldset>
+          <fieldset class="space-y-3">
+            <legend class="font-semibold mb-1">Kontak Darurat</legend>
+            <div>
+              <label class="block text-gray-500 mb-1">Nama</label>
+              <input
+                id="inputEmgName"
+                type="text"
+                class="w-full border rounded px-2 py-1"
+              />
+            </div>
+            <div>
+              <label class="block text-gray-500 mb-1">Hubungan</label>
+              <input
+                id="inputEmgRelation"
+                type="text"
+                class="w-full border rounded px-2 py-1"
+              />
+            </div>
+            <div>
+              <label class="block text-gray-500 mb-1">Nomor Telepon</label>
+              <input
+                id="inputEmgPhone"
+                type="text"
+                class="w-full border rounded px-2 py-1"
+              />
+            </div>
+            <div>
+              <label class="block text-gray-500 mb-1">Email</label>
+              <input
+                id="inputEmgEmail"
+                type="email"
+                class="w-full border rounded px-2 py-1"
+              />
+            </div>
+          </fieldset>
+          <div class="md:col-span-3 flex justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onclick="closeEdit()"
+              class="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded"
+            >
+              Simpan
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      // Banner sudah diset melalui CSS agar seragam dengan navbar
+
+      const auth = firebase.auth();
+      const db = firebase.firestore();
+
+      let currentUser = null;
+
+      auth.onAuthStateChanged(async (user) => {
+        if (!user) {
+          window.location.href = "login.html";
+          return;
+        }
+        currentUser = user;
+        const name =
+          user.displayName || (user.email ? user.email.split("@")[0] : "-");
+        document.getElementById("profileName").textContent = name;
+        document.getElementById("profileEmail").textContent = user.email || "-";
+        document.getElementById("avatarInitial").textContent = name
+          .charAt(0)
+          .toUpperCase();
+        // Load profile data from Firestore
+        loadProfile();
+      });
+
+      async function loadProfile() {
+        if (!currentUser) return;
+        try {
+          const docRef = db.collection("profiles").doc(currentUser.uid);
+          const snap = await docRef.get();
+          if (snap.exists) {
+            const data = snap.data();
+            setText("fullName", data.fullName);
+            setText("emailInfo", currentUser.email);
+            setText("phone", data.phone);
+            setText("dob", data.dob);
+            setText("gender", data.gender);
+            setText("blood", data.blood);
+            setText("height", data.height ? data.height + " cm" : "-");
+            setText("weight", data.weight ? data.weight + " kg" : "-");
+            setText("allergy", data.allergy);
+            setText("condition", data.condition);
+            setText("emgName", data.emgName);
+            setText("emgRelation", data.emgRelation);
+            setText("emgPhone", data.emgPhone);
+            setText("emgEmail", data.emgEmail);
+          } else {
+            // No doc yet, show email only
+            setText("emailInfo", currentUser.email);
+          }
+        } catch (e) {
+          console.error("Gagal memuat profil", e);
+        }
+      }
+
+      function setText(id, value) {
+        document.getElementById(id).textContent = value || "-";
+      }
+
+      function openEdit() {
+        if (!currentUser) return;
+        // Prefill form with current values from display (or could re-fetch)
+        setInput(
+          "inputFullName",
+          document.getElementById("fullName").textContent
+        );
+        setInput("inputPhone", document.getElementById("phone").textContent);
+        const dobVal = document.getElementById("dob").textContent;
+        setInput("inputDob", dobVal && dobVal !== "-" ? dobVal : "");
+        setInput(
+          "selectGender",
+          document.getElementById("gender").textContent === "-"
+            ? ""
+            : document.getElementById("gender").textContent
+        );
+        setInput("inputBlood", document.getElementById("blood").textContent);
+        setInput(
+          "inputHeight",
+          extractNumber(document.getElementById("height").textContent)
+        );
+        setInput(
+          "inputWeight",
+          extractNumber(document.getElementById("weight").textContent)
+        );
+        setInput(
+          "inputAllergy",
+          document.getElementById("allergy").textContent
+        );
+        setInput(
+          "inputCondition",
+          document.getElementById("condition").textContent
+        );
+        setInput(
+          "inputEmgName",
+          document.getElementById("emgName").textContent
+        );
+        setInput(
+          "inputEmgRelation",
+          document.getElementById("emgRelation").textContent
+        );
+        setInput(
+          "inputEmgPhone",
+          document.getElementById("emgPhone").textContent
+        );
+        setInput(
+          "inputEmgEmail",
+          document.getElementById("emgEmail").textContent
+        );
+        document.getElementById("editModal").classList.remove("hidden");
+      }
+      function setInput(id, val) {
+        const el = document.getElementById(id);
+        if (el) el.value = val && val !== "-" ? val : "";
+      }
+      function extractNumber(str) {
+        const m = (str || "").match(/\d+/);
+        return m ? m[0] : "";
+      }
+
+      async function saveProfile(e) {
+        e.preventDefault();
+        if (!currentUser) return;
+        const data = {
+          fullName: getVal("inputFullName"),
+          phone: getVal("inputPhone"),
+          dob: getVal("inputDob"),
+          gender: getVal("selectGender"),
+          blood: getVal("inputBlood"),
+          height: numOrNull(getVal("inputHeight")),
+          weight: numOrNull(getVal("inputWeight")),
+          allergy: getVal("inputAllergy"),
+          condition: getVal("inputCondition"),
+          emgName: getVal("inputEmgName"),
+          emgRelation: getVal("inputEmgRelation"),
+          emgPhone: getVal("inputEmgPhone"),
+          emgEmail: getVal("inputEmgEmail"),
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        };
+        try {
+          await db
+            .collection("profiles")
+            .doc(currentUser.uid)
+            .set(data, { merge: true });
+          // Optionally update displayName if provided
+          if (data.fullName && data.fullName !== currentUser.displayName) {
+            try {
+              await currentUser.updateProfile({ displayName: data.fullName });
+            } catch (_) {}
+          }
+          closeEdit();
+          loadProfile();
+        } catch (err) {
+          console.error("Gagal menyimpan profil", err);
+        }
+      }
+      function getVal(id) {
+        const v = document.getElementById(id).value.trim();
+        return v || null;
+      }
+      function numOrNull(v) {
+        if (!v) return null;
+        const n = Number(v);
+        return isNaN(n) ? null : n;
+      }
+
+      document
+        .getElementById("profileForm")
+        .addEventListener("submit", saveProfile);
+
+      document.getElementById("editBtn").addEventListener("click", () => {
+        openEdit();
+      });
+
+      document
+        .getElementById("logoutBtn")
+        .addEventListener("click", function (e) {
+          e.preventDefault();
+          auth.signOut().then(() => {
+            window.location.href = "login.html";
+          });
+        });
+
+      function closeEdit() {
+        document.getElementById("editModal").classList.add("hidden");
+      }
+      window.closeEdit = closeEdit;
+    </script>
+  </body>
+</html>
