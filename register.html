@@ -23,9 +23,34 @@
         width: 1em;
         height: 1em;
       }
+      /* Added centered logo + blurred background */
+      body.register-bg {
+        position: relative;
+        min-height: 100vh;
+        background: url("landing_page/assets/img/hero-carousel/latar-belakang-rso-1.jpg")
+          center / cover no-repeat fixed;
+      }
+      body.register-bg::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        background: rgba(255, 255, 255, 0.6);
+      }
+      main.form-signin {
+        /* ensure content above overlay */
+        position: relative;
+        z-index: 1;
+      }
+      .form-signin img {
+        /* center logo */
+        display: block;
+        margin: 0 auto 1rem;
+      }
     </style>
   </head>
-  <body class="d-flex align-items-center py-4 bg-body-tertiary">
+  <body class="d-flex align-items-center py-4 bg-body-tertiary register-bg">
     <svg xmlns="http://www.w3.org/2000/svg" class="d-none">
       <symbol id="check2" viewBox="0 0 16 16">
         <path
@@ -183,7 +208,7 @@
           Daftar
         </button>
         <p class="mt-3 mb-0 text-center">
-          Sudah punya akun? <a href="index.html">Masuk</a>
+          Sudah punya akun? <a href="login.html">Masuk</a>
         </p>
         <p class="mt-5 mb-3 text-body-secondary">
           &copy; RS Ortopedi Prof. Dr. R. Soeharso Surakarta 2025
@@ -250,6 +275,11 @@
               "Registrasi berhasil. Silakan verifikasi email Anda, lalu masuk."
             );
             form.reset();
+            // Auto-redirect ke dashboard setelah 1.5 detik.
+            // Jika ingin paksa user login manual, ganti target menjadi 'login.html'.
+            setTimeout(function () {
+              window.location.href = "dashboard.html";
+            }, 1500);
           } catch (err) {
             let msg = "Terjadi kesalahan. Coba lagi.";
             if (err && err.code) {
