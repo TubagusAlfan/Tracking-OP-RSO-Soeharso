@@ -36,8 +36,9 @@
         const db = firebase.firestore();
         const auth = firebase.auth();
 
-        let patients = [];
-        let selectedPatientIndex = -1;
+  let patients = [];
+  let selectedPatientIndex = -1;
+  let patientFilter = '';
 
         auth.onAuthStateChanged((user) => {
           if (!user) {
@@ -71,14 +72,26 @@
           const tbody = document.getElementById('patient-table-body');
           if (!tbody) return;
           tbody.innerHTML = '';
+          let counter = 0;
           patients.forEach((p, i) => {
+            const q = patientFilter;
+            const match = !q || (p.reg && p.reg.toLowerCase().includes(q)) || (p.name && p.name.toLowerCase().includes(q));
+            if(!match) return;
+            counter++;
             const tr = document.createElement('tr');
             tr.className = `cursor-pointer hover:bg-blue-100 ${i === selectedPatientIndex ? 'bg-blue-200' : ''}`;
             tr.onclick = () => selectPatient(i);
-      tr.innerHTML = `<td>${i + 1}</td><td>${p.reg}</td><td>${p.name}</td><td>${p.status || '-'}</td><td><button class='bg-red-500 text-white px-2 py-0.5 rounded text-xs' onclick="deletePatient(event,'${p.id}',${i})">Hapus</button></td>`;
+            tr.innerHTML = `<td>${counter}</td><td>${p.reg}</td><td>${p.name}</td><td>${p.status || '-'}</td><td><button class='bg-red-500 text-white px-2 py-0.5 rounded text-xs' onclick="deletePatient(event,'${p.id}',${i})">Hapus</button></td>`;
             tbody.appendChild(tr);
           });
+          if(counter===0){
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td colspan="5" class="text-center text-gray-500 py-2">Tidak ada data</td>`;
+            tbody.appendChild(tr);
+          }
         }
+
+        function setPatientSearch(val){ patientFilter = (val||'').toLowerCase(); updateTable(); }
 
         function updateTahapanTable() {
           const tahapanBody = document.getElementById('tahapan-body');
@@ -132,7 +145,7 @@
   document.addEventListener('click', (e)=>{ const w=document.getElementById('userMenuWrapper'); if(w && !w.contains(e.target)) closeUserMenu(); });
 
         // expose
-  window.selectPatient = selectPatient; window.showForm = showForm; window.hideForm = hideForm; window.addPatient=addPatient; window.addRow=addRow; window.deleteRow=deleteRow; window.updateProgressStatus=updateProgressStatus; window.generateLink=generateLink; window.doLogout=doLogout; window.deletePatient=deletePatient; window.toggleUserMenu=toggleUserMenu; window.openProfile=openProfile;
+  window.selectPatient = selectPatient; window.showForm = showForm; window.hideForm = hideForm; window.addPatient=addPatient; window.addRow=addRow; window.deleteRow=deleteRow; window.updateProgressStatus=updateProgressStatus; window.generateLink=generateLink; window.doLogout=doLogout; window.deletePatient=deletePatient; window.toggleUserMenu=toggleUserMenu; window.openProfile=openProfile; window.setPatientSearch=setPatientSearch;
       })();
   </script>
 
@@ -159,14 +172,19 @@
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div class="col-span-1 md:col-span-1">
           <div class="bg-white shadow rounded p-4">
-            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-2">
-              <h2 class="font-semibold">Data List Pasien</h2>
-              <button
-                onclick="showForm()"
-                class="bg-blue-500 text-white px-2 py-1 text-sm rounded"
-              >
-                Tambah
-              </button>
+            <div class="flex flex-col gap-2 mb-2">
+              <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+                <h2 class="font-semibold">Data List Pasien</h2>
+                <button
+                  onclick="showForm()"
+                  class="bg-blue-500 text-white px-2 py-1 text-sm rounded self-start sm:self-auto"
+                >
+                  Tambah
+                </button>
+              </div>
+              <div>
+                <input type="text" oninput="setPatientSearch(this.value)" placeholder="Cari No. Reg / Nama..." class="w-full border px-2 py-1 text-sm rounded" />
+              </div>
             </div>
             <div class="overflow-x-auto -mx-2 sm:mx-0">
             <table class="w-full min-w-[520px] text-sm border">
