@@ -129,6 +129,10 @@
         margin-top: 2px;
         font-size: 0.95rem;
       }
+  /* Hero search sizing (dynamic width set by JS to match heading) */
+  #regTrackForm .input-group { width:100%; max-width:100%; transition:width .3s ease; }
+  #regTrackForm .form-control { height:3.2rem; font-size:1.05rem; padding:0.9rem 1.25rem; }
+  #regTrackForm button { height:3.2rem; font-size:1.05rem; padding:0 1.75rem; }
     </style>
   </head>
 
@@ -172,7 +176,7 @@
               alt=""
             />
             <div class="carousel-container">
-              <h2>Selamat Datang di ORTOJEJAK</h2>
+              <h2 id="heroTitle">Selamat Datang di ORTOJEJAK</h2>
               <p>
                 Website ini adalah portal pelacakan progres pengerjaan alat
                 ortotik/prostetik yang memudahkan pasien memantau setiap tahapan
@@ -183,7 +187,7 @@
                 class="d-flex justify-content-center mt-4"
                 onsubmit="return trackByReg(event)"
               >
-                <div class="input-group" style="max-width: 520px">
+                <div class="input-group">
                   <input
                     id="regSearchInput"
                     type="text"
@@ -197,12 +201,7 @@
                   </button>
                 </div>
               </form>
-              <div
-                id="track-error"
-                class="text-warning fw-semibold mt-2"
-                style="display: none; font-size: 0.9rem"
-              ></div>
-            </div>
+              <div id="track-error" class="text-warning fw-semibold mt-2" style="display:none;font-size:0.9rem"></div>
           </div>
           <!-- End Carousel Item -->
 
@@ -1333,6 +1332,16 @@
         }
         return false;
       }
+      function adjustHeroSearchWidth(){
+        const title = document.getElementById('heroTitle');
+        const group = document.querySelector('#regTrackForm .input-group');
+        if(!title || !group) return;
+        // Desired width equals heading width but not exceeding viewport minus margins
+        const max = Math.min(title.offsetWidth, window.innerWidth - 64);
+        group.style.width = max + 'px';
+      }
+      window.addEventListener('load', adjustHeroSearchWidth);
+      window.addEventListener('resize', adjustHeroSearchWidth);
     </script>
   </body>
 </html>
