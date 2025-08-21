@@ -102,7 +102,8 @@
             const patient = patients[selectedPatientIndex];
             document.getElementById('exam').innerText = patient.exam;
             (patient.tahapan?.length ? generateLinkBtn.classList.remove('hidden') : generateLinkBtn.classList.add('hidden'));
-            patient.tahapan.forEach((t, i) => {
+      const stageOptions = ['Pengukuran','Pembuatan Body Model','Pencetakan Alat','Perakitan','Siap Coba','Selesai'];
+      patient.tahapan.forEach((t, i) => {
               const row = tahapanBody.insertRow();
               row.innerHTML = `
                 <td>${i + 1}</td>
@@ -110,7 +111,7 @@
                 <td><textarea placeholder="Keterangan Tahapan" class="w-full border px-2 py-1">${t.keterangan}</textarea></td>
                 <td>
                   <select class="w-full border px-2 py-1">
-                    ${['Assestment','Pengukuran','Negatif Gips','Positif Gips','Pembungkusan','Penyusunan','Percobaan','Perbaikan','Selesai'].map(stage => `<option ${t.tahapan===stage?'selected':''}>${stage}</option>`).join('')}
+        ${stageOptions.map(stage => `<option ${t.tahapan===stage?'selected':''}>${stage}</option>`).join('')}
                   </select>
                 </td>
                 <td><button onclick="deleteRow(this)" class="bg-red-500 text-white px-2 py-1 rounded text-xs">Hapus</button></td>`;
@@ -133,7 +134,7 @@
             const data = { reg,name,exam,status:'-',tahapan:[],token:generateRandomToken() };
             try { await db.collection('patients').doc(reg).set(data); hideForm(); } catch(e){ console.error(e); alert('Gagal menambahkan pasien.'); }
         }
-  function addRow(){ if(selectedPatientIndex===-1){alert('Pilih pasien terlebih dahulu!');return;} patients[selectedPatientIndex].tahapan.push({tanggal:'',keterangan:'',tahapan:'Assestment'}); updateTahapanTable(); }
+  function addRow(){ if(selectedPatientIndex===-1){alert('Pilih pasien terlebih dahulu!');return;} patients[selectedPatientIndex].tahapan.push({tanggal:'',keterangan:'',tahapan:'Pengukuran'}); updateTahapanTable(); }
         function deleteRow(btn){ const rowIndex = btn.parentNode.parentNode.rowIndex -1; patients[selectedPatientIndex].tahapan.splice(rowIndex,1); updateTahapanTable(); }
         async function updateProgressStatus(){ if(selectedPatientIndex===-1){alert('Pilih pasien terlebih dahulu!');return;} const pid = patients[selectedPatientIndex].id; const rows=[...document.querySelectorAll('#tahapan-body tr')]; const newTahapan = rows.map(r=>({ tanggal:r.querySelector('input[type="date"]').value, keterangan:r.querySelector('textarea').value, tahapan:r.querySelector('select').value })); const last = newTahapan.length?newTahapan[newTahapan.length-1].tahapan:'-'; try { await db.collection('patients').doc(pid).update({ tahapan:newTahapan, status:last }); } catch(e){ console.error(e); alert('Gagal memperbarui progres.'); } }
   function generateLink(){ if(selectedPatientIndex===-1){alert('Pilih pasien terlebih dahulu!');return;} const patient=patients[selectedPatientIndex]; if(!patient.token){ alert('Token belum tersedia.'); return;} const trackingUrl = `${location.origin}/tracking.html?token=${patient.token}`; prompt('Salin tautan ini:', trackingUrl); }
