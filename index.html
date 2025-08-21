@@ -178,9 +178,30 @@
                 ortotik/prostetik yang memudahkan pasien memantau setiap tahapan
                 secara real-time.
               </p>
-              <a href="../login.html" class="btn-get-started"
-                >Daftar Sekarang</a
+              <form
+                id="regTrackForm"
+                class="d-flex justify-content-center mt-4"
+                onsubmit="return trackByReg(event)"
               >
+                <div class="input-group" style="max-width: 520px">
+                  <input
+                    id="regSearchInput"
+                    type="text"
+                    class="form-control"
+                    placeholder="Masukkan No. Registrasi untuk Lacak Progres..."
+                    aria-label="No. Registrasi"
+                    required
+                  />
+                  <button class="btn btn-outline-info" type="submit">
+                    Lacak
+                  </button>
+                </div>
+              </form>
+              <div
+                id="track-error"
+                class="text-warning fw-semibold mt-2"
+                style="display: none; font-size: 0.9rem"
+              ></div>
             </div>
           </div>
           <!-- End Carousel Item -->
@@ -1265,5 +1286,45 @@
 
     <!-- Main JS File -->
     <script src="assets/js/main.js"></script>
+    <!-- Firebase for tracking search (no auth required) -->
+    <script src="https://www.gstatic.com/firebasejs/12.1.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore-compat.js"></script>
+    <script src="../config-firebase.js"></script>
+    <script>
+      // Firestore reference (guard repeating init is handled in config-firebase.js)
+      if (typeof firebase !== "undefined") {
+        const trackDb = firebase.firestore();
+        async function trackByReg(e) {
+          e.preventDefault();
+          const input = document.getElementById("regSearchInput");
+          const errBox = document.getElementById("track-error");
+          errBox.style.display = "none";
+          const reg = (input.value || "").trim();
+          if (!reg) return false;
+          try {
+            const doc = await trackDb.collection("patients").doc(reg).get();
+            if (!doc.exists) {
+              errBox.textContent = "No. registrasi tidak ditemukan.";
+              errBox.style.display = "block";
+              return false;
+            }
+            const data = doc.data();
+            if (!data.token) {
+              errBox.textContent = "Data pasien belum siap dilacak.";
+              errBox.style.display = "block";
+              return false;
+            }
+            window.location.href = `../tracking.html?token=${encodeURIComponent(
+              data.token
+            )}`;
+          } catch (err) {
+            console.error(err);
+            errBox.textContent = "Terjadi kesalahan. Coba lagi.";
+            errBox.style.display = "block";
+          }
+          return false;
+        }
+      }
+    </script>
   </body>
 </html>
