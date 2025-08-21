@@ -188,7 +188,7 @@
                     id="regSearchInput"
                     type="text"
                     class="form-control"
-                    placeholder="Masukkan No. Registrasi untuk Lacak Progres..."
+                    placeholder="Masukkan / Tempel No. Registrasi untuk Lacak Progres..."
                     aria-label="No. Registrasi"
                     required
                   />
@@ -1286,44 +1286,52 @@
 
     <!-- Main JS File -->
     <script src="assets/js/main.js"></script>
-    <!-- Firebase for tracking search (no auth required) -->
+    <!-- Firebase (tracking search) -->
     <script src="https://www.gstatic.com/firebasejs/12.1.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore-compat.js"></script>
     <script src="../config-firebase.js"></script>
     <script>
-      // Firestore reference (guard repeating init is handled in config-firebase.js)
-      if (typeof firebase !== "undefined") {
-        const trackDb = firebase.firestore();
-        async function trackByReg(e) {
-          e.preventDefault();
-          const input = document.getElementById("regSearchInput");
-          const errBox = document.getElementById("track-error");
-          errBox.style.display = "none";
-          const reg = (input.value || "").trim();
-          if (!reg) return false;
-          try {
-            const doc = await trackDb.collection("patients").doc(reg).get();
-            if (!doc.exists) {
-              errBox.textContent = "No. registrasi tidak ditemukan.";
-              errBox.style.display = "block";
-              return false;
-            }
-            const data = doc.data();
-            if (!data.token) {
-              errBox.textContent = "Data pasien belum siap dilacak.";
-              errBox.style.display = "block";
-              return false;
-            }
-            window.location.href = `../tracking.html?token=${encodeURIComponent(
-              data.token
-            )}`;
-          } catch (err) {
-            console.error(err);
-            errBox.textContent = "Terjadi kesalahan. Coba lagi.";
-            errBox.style.display = "block";
-          }
+      // Form tracking by registration number
+      let trackDb;
+      try {
+        trackDb = firebase.firestore();
+      } catch (e) {
+        console.error(e);
+      }
+      async function trackByReg(e) {
+        e.preventDefault();
+        const input = document.getElementById("regSearchInput");
+        const errBox = document.getElementById("track-error");
+        errBox.style.display = "none";
+        const reg = (input.value || "").trim();
+        if (!reg) return false;
+        if (!trackDb) {
+          errBox.textContent = "Konfigurasi sistem belum siap.";
+          errBox.style.display = "block";
           return false;
         }
+        try {
+          const snap = await trackDb.collection("patients").doc(reg).get();
+          if (!snap.exists) {
+            errBox.textContent = "No. registrasi tidak ditemukan.";
+            errBox.style.display = "block";
+            return false;
+          }
+          const data = snap.data();
+          if (!data.token) {
+            errBox.textContent = "Data pasien belum siap dilacak.";
+            errBox.style.display = "block";
+            return false;
+          }
+          window.location.href = `../tracking.html?token=${encodeURIComponent(
+            data.token
+          )}`;
+        } catch (err) {
+          console.error(err);
+          errBox.textContent = "Terjadi kesalahan. Coba lagi.";
+          errBox.style.display = "block";
+        }
+        return false;
       }
     </script>
   </body>
