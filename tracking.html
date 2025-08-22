@@ -129,16 +129,13 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // Tahapan statis yang akan ditampilkan di timeline
+        // Tahapan statis yang akan ditampilkan di timeline (sudah diperbarui)
         const allStages = [
-            "Assestment",
             "Pengukuran",
-            "Negatif Gips",
-            "Positif Gips",
-            "Pembungkusan",
-            "Penyusunan",
-            "Percobaan",
-            "Perbaikan",
+            "Pembuatan Body Model",
+            "Pencetakan Alat",
+            "Perakitan",
+            "Siap Coba",
             "Selesai",
         ];
         
