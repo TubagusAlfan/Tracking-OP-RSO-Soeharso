@@ -4,16 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Progres Pengerjaan Alat Ortotik/Prostetik</title>
-    <!-- Tailwind CSS v3.4.4 untuk styling modern -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts untuk font yang lebih baik -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
     <style>
-      body {
-        font-family: 'Inter', sans-serif;
-      }
       .timeline-container {
         display: flex;
         justify-content: space-between;
@@ -24,21 +19,14 @@
         flex-wrap: wrap;
         gap: 1rem;
       }
-      /* Garis dasar timeline */
       .timeline-line {
         position: absolute;
         height: 4px;
-        width: calc(100% - 2rem); /* Kurangi padding */
-        background-color: #e5e7eb; /* gray-200 */
+        width: 100%;
+        background-color: #e5e7eb;
         top: 28px;
-        left: 1rem;
-        right: 1rem;
-        border-radius: 9999px;
-      }
-      /* Garis progres yang terisi */
-      .active-line {
-        background-color: #22c55e; /* green-500 */
-        transition: width 0.5s ease-in-out;
+        left: 0;
+        right: 0;
       }
       .timeline-step {
         position: relative;
@@ -49,20 +37,17 @@
         z-index: 10;
         cursor: pointer;
         transition: transform 0.2s;
-        flex: 1 1 auto;
+        flex: 1 1 80px;
         min-width: 60px;
       }
       .timeline-step:hover {
         transform: scale(1.05);
       }
-      /* Warna lingkaran untuk tahapan yang selesai */
       .timeline-step.completed .step-circle {
-        background-color: #22c55e; /* green-500 */
+        background-color: #10b981; /* green-500 */
       }
-      /* Warna lingkaran untuk tahapan yang sedang berlangsung */
       .timeline-step.active .step-circle {
         background-color: #ef4444; /* red-500 */
-        box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.5);
       }
       .step-circle {
         width: 40px;
@@ -75,11 +60,10 @@
         align-items: center;
         justify-content: center;
         border: 2px solid white;
-        transition: background-color 0.3s ease-in-out;
       }
       .step-label {
         margin-top: 0.5rem;
-        font-size: 0.65rem; /* lebih kecil untuk mobile */
+        font-size: 0.65rem; /* smaller for mobile */
         font-weight: 600; /* font-semibold */
         width: 70px;
         word-wrap: break-word;
@@ -90,29 +74,29 @@
           width: 80px;
         }
       }
-      /* Sembunyikan garis timeline di perangkat mobile */
       @media (max-width: 640px) {
         .timeline-line {
           display: none;
         }
       }
+      .active-line {
+        background-color: #10b981; /* green-500 */
+      }
     </style>
   </head>
-  <body class="bg-gray-100 p-4 sm:p-8">
+  <body class="bg-gray-100 p-8">
     <div class="max-w-4xl mx-auto bg-white p-6 shadow-lg rounded-lg">
-      <h1 class="text-2xl sm:text-3xl font-bold text-center mb-6 text-gray-800">
+      <h1 class="text-2xl font-bold text-center mb-6">
         Progres Pengerjaan Alat Ortotik/Prostetik
       </h1>
       <p id="patient-info" class="text-center text-gray-600 mb-6"></p>
 
-      <div class="relative">
-        <div id="timeline-container" class="timeline-container"></div>
-      </div>
+      <div id="timeline-container" class="timeline-container"></div>
 
-      <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 mt-8">
-        <h3 class="font-semibold text-lg mb-2 text-gray-700">Detail Tahapan</h3>
+      <div class="bg-gray-50 p-4 rounded-lg border">
+        <h3 class="font-semibold text-lg mb-2">Detail Tahapan</h3>
         <div id="detail-tahapan">
-          <p class="text-gray-500">Silakan tunggu...</p>
+          <p>Silakan tunggu...</p>
         </div>
         <p class="text-right text-gray-500 text-sm mt-4">
           Terakhir diperbarui: <span id="last-updated"></span>
@@ -120,155 +104,163 @@
       </div>
     </div>
 
-    <!-- Firebase SDK menggunakan modul compat untuk kompatibilitas -->
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
-      import { getFirestore, collection, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
+      import {
+        getFirestore,
+        collection,
+        query,
+        where,
+        getDocs,
+      } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
 
-      // Gunakan variabel global yang disediakan Canvas
-      const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-      const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+      const firebaseConfig = {
+        apiKey: "AIzaSyAr7FkTrOKHdvBzhv7FAQ9a39zTzfQwFrk",
+        authDomain: "track-op-rso.firebaseapp.com",
+        databaseURL:
+          "https://track-op-rso-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "track-op-rso",
+        storageBucket: "track-op-rso.firebasestorage.app",
+        messagingSenderId: "617234721043",
+        appId: "1:617234721043:web:7b36b3d90e6fad4d87d2e6",
+      };
 
-      // Inisialisasi Firebase
-      if (Object.keys(firebaseConfig).length > 0) {
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        console.log("Firebase initialized successfully.");
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
 
-        // Deklarasi semua tahapan yang akan ditampilkan di timeline
-        const allStages = [
-          "Pengukuran",
-          "Pembuatan Body Model",
-          "Pencetakan Alat",
-          "Perakitan",
-          "Siap Coba",
-          "Selesai",
-        ];
-        
-        let patientData = null;
+      let allStages = [
+        "Assestment",
+        "Pengukuran",
+        "Negatif Gips",
+        "Positif Gips",
+        "Pembungkusan",
+        "Penyusunan",
+        "Percobaan",
+        "Perbaikan",
+        "Selesai",
+      ];
+      let patientTahapan = [];
 
-        // Fungsi untuk mengambil data pasien
-        async function fetchPatientData() {
-            const params = new URLSearchParams(window.location.search);
-            const token = params.get("token");
+      async function fetchPatientData() {
+        const params = new URLSearchParams(window.location.search);
+        const token = params.get("token");
 
-            const timelineContainer = document.getElementById("timeline-container");
-            const patientInfoElement = document.getElementById("patient-info");
-            const detailContainer = document.getElementById("detail-tahapan");
+        const timelineContainer = document.getElementById("timeline-container");
+        const patientInfoElement = document.getElementById("patient-info");
+        const detailContainer = document.getElementById("detail-tahapan");
 
-            if (!token) {
-                timelineContainer.innerHTML = `<p class='text-center text-red-500'>Tautan tidak valid. Token tidak ditemukan.</p>`;
-                patientInfoElement.innerText = "";
-                detailContainer.innerHTML = `<p class='text-gray-500'>Data tidak dapat dimuat.</p>`;
-                return;
-            }
-
-            try {
-                // Gunakan onSnapshot untuk mendengarkan perubahan secara real-time
-                const q = query(
-                    collection(db, `artifacts/${appId}/public/data/patients`),
-                    where("token", "==", token)
-                );
-
-                onSnapshot(q, (querySnapshot) => {
-                    if (querySnapshot.empty) {
-                        timelineContainer.innerHTML = `<p class='text-center text-red-500'>Pasien tidak ditemukan.</p>`;
-                        patientInfoElement.innerText = "";
-                        detailContainer.innerHTML = `<p class='text-gray-500'>Data tidak dapat dimuat.</p>`;
-                        return;
-                    }
-
-                    const doc = querySnapshot.docs[0];
-                    patientData = doc.data();
-
-                    patientInfoElement.innerText = `Pasien: ${patientData.name} - Alat: ${patientData.exam}`;
-
-                    renderTimeline(patientData.tahapan);
-                    
-                    // Tampilkan detail tahapan terakhir secara default
-                    if (patientData.tahapan && patientData.tahapan.length > 0) {
-                        renderDetails(patientData.tahapan[patientData.tahapan.length - 1]);
-                    } else {
-                        renderDetails(null);
-                    }
-                });
-            } catch (error) {
-                console.error("Error getting document:", error);
-                timelineContainer.innerHTML = `<p class='text-center text-red-500'>Terjadi kesalahan saat memuat data.</p>`;
-                patientInfoElement.innerText = "";
-                detailContainer.innerHTML = `<p class='text-gray-500'>Data tidak dapat dimuat.</p>`;
-            }
+        if (!token) {
+          timelineContainer.innerHTML =
+            "<p class='text-center text-red-500'>Tautan tidak valid. Token tidak ditemukan.</p>";
+          patientInfoElement.innerText = "";
+          detailContainer.innerHTML = "<p>Data tidak dapat dimuat.</p>";
+          return;
         }
 
-        function renderTimeline(tahapanData) {
-            const timelineContainer = document.getElementById("timeline-container");
-            timelineContainer.innerHTML = "";
-            
-            // Tentukan tahapan terakhir yang diisi dari data pasien
-            const lastStageFromData = tahapanData.length > 0 ? tahapanData[tahapanData.length - 1].tahapan : null;
-            const lastStageIndex = allStages.indexOf(lastStageFromData);
-            
-            // Tambahkan garis background
-            const backgroundLine = document.createElement("div");
-            backgroundLine.className = "timeline-line";
-            timelineContainer.appendChild(backgroundLine);
-            
-            // Tambahkan garis progres
-            if (lastStageIndex >= 0 && allStages.length > 1) {
-              const activeLine = document.createElement("div");
-              activeLine.className = "timeline-line active-line";
-              
-              // Hitung persentase lebar garis progres
-              const progressPercentage = (lastStageIndex) / (allStages.length - 1) * 100;
-              activeLine.style.width = `${progressPercentage}%`;
-              timelineContainer.appendChild(activeLine);
-            }
+        try {
+          const q = query(
+            collection(db, "patients"),
+            where("token", "==", token)
+          );
+          const querySnapshot = await getDocs(q);
 
-            allStages.forEach((stageName, index) => {
-                const isCompleted = index <= lastStageIndex;
-                const isActive = index === lastStageIndex;
-                const isClickable = isCompleted;
+          if (querySnapshot.empty) {
+            timelineContainer.innerHTML =
+              "<p class='text-center text-red-500'>Pasien tidak ditemukan.</p>";
+            patientInfoElement.innerText = "";
+            detailContainer.innerHTML = "<p>Data tidak dapat dimuat.</p>";
+            return;
+          }
 
-                const step = document.createElement("div");
-                step.className = `timeline-step ${isCompleted ? "completed" : ""} ${isActive ? "active" : ""}`;
-                step.dataset.index = index;
-                if (isClickable && patientData) {
-                  const stageDetail = patientData.tahapan.find(t => t.tahapan === stageName);
-                  if (stageDetail) {
-                    step.onclick = () => renderDetails(stageDetail);
-                  }
-                }
+          const doc = querySnapshot.docs[0];
+          const patientData = doc.data();
+          patientTahapan = patientData.tahapan;
 
-                step.innerHTML = `
+          patientInfoElement.innerText = `Pasien: ${patientData.name} - Alat: ${patientData.exam}`;
+
+          renderTimeline(patientTahapan);
+          // Tampilkan detail tahapan terakhir secara default
+          if (patientTahapan.length > 0) {
+            renderDetails(patientTahapan[patientTahapan.length - 1]);
+          } else {
+            renderDetails(null);
+          }
+        } catch (error) {
+          console.error("Error getting document:", error);
+          timelineContainer.innerHTML =
+            "<p class='text-center text-red-500'>Terjadi kesalahan saat memuat data.</p>";
+          patientInfoElement.innerText = "";
+          detailContainer.innerHTML = "<p>Data tidak dapat dimuat.</p>";
+        }
+      }
+
+      function renderTimeline(tahapanData) {
+        const timelineContainer = document.getElementById("timeline-container");
+        timelineContainer.innerHTML = "";
+
+        // Buat daftar tahapan yang benar-benar ada di data pasien
+        const displayedStages = tahapanData.map((t) => t.tahapan);
+
+        let completedSteps = 0;
+        if (tahapanData.length > 0) {
+          const lastStage = tahapanData[tahapanData.length - 1].tahapan;
+          completedSteps = displayedStages.indexOf(lastStage) + 1;
+        }
+
+        // Tambahkan garis background
+        const backgroundLine = document.createElement("div");
+        backgroundLine.className = "timeline-line";
+        timelineContainer.appendChild(backgroundLine);
+
+        // Tambahkan garis progres
+        if (completedSteps > 0) {
+          const activeLine = document.createElement("div");
+          activeLine.className = "timeline-line active-line";
+          activeLine.style.width = `${
+            ((completedSteps - 1) / (displayedStages.length - 1)) * 100
+          }%`;
+          timelineContainer.appendChild(activeLine);
+        }
+
+        displayedStages.forEach((stageName, index) => {
+          const isCompleted = index < completedSteps;
+          const isActive = index === completedSteps - 1;
+
+          const step = document.createElement("div");
+          step.className = `timeline-step ${isCompleted ? "completed" : ""} ${
+            isActive ? "active" : ""
+          }`;
+          step.dataset.index = index;
+          step.onclick = () => renderDetails(patientTahapan[index]);
+
+          step.innerHTML = `
                     <div class="step-circle">${index + 1}</div>
                     <div class="step-label">${stageName}</div>
                 `;
-                timelineContainer.appendChild(step);
-            });
-        }
-
-        function renderDetails(stage) {
-            const detailContainer = document.getElementById("detail-tahapan");
-            const lastUpdatedElement = document.getElementById("last-updated");
-
-            if (stage) {
-                detailContainer.innerHTML = `
-                    <p class="text-gray-700"><strong>Tahapan:</strong> ${stage.tahapan || "-"}</p>
-                    <p class="text-gray-700"><strong>Tanggal:</strong> ${stage.tanggal || "-"}</p>
-                    <p class="text-gray-700"><strong>Deskripsi:</strong> ${stage.keterangan || "-"}</p>
-                `;
-                lastUpdatedElement.innerText = stage.tanggal || "N/A";
-            } else {
-                detailContainer.innerHTML = `<p class="text-gray-500">Belum ada progres yang tercatat.</p>`;
-                lastUpdatedElement.innerText = "N/A";
-            }
-        }
-        
-        // Panggil fungsi utama saat halaman dimuat
-        fetchPatientData();
-      } else {
-        console.error("Firebase config is missing. Please provide it for the app to work.");
+          timelineContainer.appendChild(step);
+        });
       }
+
+      function renderDetails(stage) {
+        const detailContainer = document.getElementById("detail-tahapan");
+        const lastUpdatedElement = document.getElementById("last-updated");
+
+        if (stage) {
+          detailContainer.innerHTML = `
+                    <p><strong>Tahapan:</strong> ${stage.tahapan || "-"}</p>
+                    <p><strong>Tanggal:</strong> ${stage.tanggal || "-"}</p>
+                    <p><strong>Deskripsi:</strong> ${
+                      stage.keterangan || "-"
+                    }</p>
+                `;
+          lastUpdatedElement.innerText = stage.tanggal || "N/A";
+        } else {
+          detailContainer.innerHTML = "<p>Belum ada progres yang tercatat.</p>";
+          lastUpdatedElement.innerText = "N/A";
+        }
+      }
+
+      fetchPatientData();
     </script>
   </body>
 </html>
