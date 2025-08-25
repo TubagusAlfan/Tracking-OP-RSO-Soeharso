@@ -143,7 +143,36 @@
         }
   function addRow(){ if(selectedPatientIndex===-1){alert('Pilih pasien terlebih dahulu!');return;} patients[selectedPatientIndex].tahapan.push({tanggal:'',keterangan:'',tahapan:'Pengukuran'}); updateTahapanTable(); }
         function deleteRow(btn){ const rowIndex = btn.parentNode.parentNode.rowIndex -1; patients[selectedPatientIndex].tahapan.splice(rowIndex,1); updateTahapanTable(); }
-        async function updateProgressStatus(){ if(selectedPatientIndex===-1){alert('Pilih pasien terlebih dahulu!');return;} const pid = patients[selectedPatientIndex].id; const rows=[...document.querySelectorAll('#tahapan-body tr')]; const newTahapan = rows.map(r=>({ tanggal:r.querySelector('input[type="date"]').value, keterangan:r.querySelector('textarea').value, tahapan:r.querySelector('select').value })); const last = newTahapan.length?newTahapan[newTahapan.length-1].tahapan:'-'; try { await db.collection('patients').doc(pid).update({ tahapan:newTahapan, status:last }); } catch(e){ console.error(e); alert('Gagal memperbarui progres.'); } }
+        async function updateProgressStatus(){ 
+          if(selectedPatientIndex===-1){
+            alert('Pilih pasien terlebih dahulu!');
+            return;
+          } 
+          const pid = patients[selectedPatientIndex].id; 
+          const rows=[...document.querySelectorAll('#tahapan-body tr')]; 
+          const newTahapan = rows.map(r=>({ 
+            tanggal:r.querySelector('input[type="date"]').value,
+            keterangan:r.querySelector('textarea').value,
+            tahapan:r.querySelector('select').value 
+          })); 
+          const last = newTahapan.length?newTahapan[newTahapan.length-1].tahapan:'-'; 
+           // Logika baru untuk menghapus token
+          const updateData = {
+            tahapan: newTahapan,
+            status: last
+          };
+          if (last === 'Sudah diberikan') {
+            updateData.token = firebase.firestore.FieldValue.delete();
+          }
+        
+          try {
+            await db.collection('patients').doc(pid).update(updateData);
+            alert('Progres berhasil diperbarui.'); // Tambahkan notifikasi
+          } catch (e) {
+            console.error(e);
+            alert('Gagal memperbarui progres.');
+          }
+        }
   function generateLink(){ if(selectedPatientIndex===-1){alert('Pilih pasien terlebih dahulu!');return;} const patient=patients[selectedPatientIndex]; if(!patient.token){ alert('Token belum tersedia.'); return;} const trackingUrl = `${location.origin}/tracking.html?token=${patient.token}`; prompt('Salin tautan ini:', trackingUrl); }
   async function deletePatient(ev,id,index){ ev.stopPropagation(); if(!confirm('Yakin hapus pasien ini?')) return; try { await db.collection('patients').doc(id).delete(); if(selectedPatientIndex===index){ selectedPatientIndex=-1; } updateTable(); updateTahapanTable(); } catch(e){ console.error(e); alert('Gagal menghapus pasien.'); } }
   function doLogout(){ auth.signOut().then(()=>{ sessionStorage.setItem('justLoggedOut','1'); window.location.href='login.html'; }); }
@@ -296,6 +325,7 @@
     </div>
   </body>
 </html>
+
 
 
 
