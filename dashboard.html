@@ -125,13 +125,20 @@
         function selectPatient(i) { selectedPatientIndex = i; updateTable(); updateTahapanTable(); }
         function showForm() { document.getElementById('form-popup').classList.remove('hidden'); }
         function hideForm() { document.getElementById('form-popup').classList.add('hidden'); ['regInput','nameInput','examInput'].forEach(id=>document.getElementById(id).value=''); }
-        function generateRandomToken() { return Math.random().toString(36).substr(2,11); }
+        function generateSecureToken(length) {
+            const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~";
+            let token = "";
+            for (let i = 0; i < length; i++) {
+                token += charset.charAt(Math.floor(Math.random() * charset.length));
+            }
+            return token;
+        }
         async function addPatient() {
           const reg = document.getElementById('regInput').value.trim();
           const name = document.getElementById('nameInput').value.trim();
           const exam = document.getElementById('examInput').value.trim();
             if(!reg||!name||!exam){ alert('Semua data harus diisi!'); return; }
-            const data = { reg,name,exam,status:'-',tahapan:[],token:generateRandomToken() };
+            const data = { reg,name,exam,status:'-',tahapan:[],token:generateSecureToken(20) };
             try { await db.collection('patients').doc(reg).set(data); hideForm(); } catch(e){ console.error(e); alert('Gagal menambahkan pasien.'); }
         }
   function addRow(){ if(selectedPatientIndex===-1){alert('Pilih pasien terlebih dahulu!');return;} patients[selectedPatientIndex].tahapan.push({tanggal:'',keterangan:'',tahapan:'Pengukuran'}); updateTahapanTable(); }
@@ -289,4 +296,5 @@
     </div>
   </body>
 </html>
+
 
