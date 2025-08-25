@@ -188,8 +188,8 @@
                     id="regSearchInput"
                     type="text"
                     class="form-control"
-                    placeholder="Masukkan / Tempel No. Registrasi untuk Lacak Progres..."
-                    aria-label="No. Registrasi"
+                    placeholder="Masukkan / Tempel No. Order untuk Lacak Progres..."
+                    aria-label="No. Order"
                     required
                   />
                   <button class="btn btn-outline-info" type="submit">
@@ -1313,7 +1313,7 @@
         try {
           const snap = await trackDb.collection("patients").doc(reg).get();
           if (!snap.exists) {
-            errBox.textContent = "No. registrasi tidak ditemukan.";
+            errBox.textContent = "No. order tidak ditemukan.";
             errBox.style.display = "block";
             return false;
           }
