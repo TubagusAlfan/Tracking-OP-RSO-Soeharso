@@ -225,27 +225,20 @@
             const q = query(collection(db, "patients"), where("token", "==", token));
             
             onSnapshot(q, (querySnapshot) => {
-                  if (!querySnapshot.empty) {
+                if (!querySnapshot.empty) {
                     const patientDoc = querySnapshot.docs[0];
                     const patientData = patientDoc.data();
-                
-                    // Logika baru untuk memeriksa apakah tahapan "Sudah diberikan" sudah ada
-                    const isCompleted = patientData.tahapan?.some(t => t.tahapan === 'Sudah diberikan');
-                    if (isCompleted) {
-                         document.body.innerHTML = '<div class="text-center p-8 text-green-500 font-bold">Progres telah selesai dan alat telah diberikan kepada pasien.</div>';
-                    } else {
-                         renderTimeline(patientData);
-                    }
-                  } else {
-                    // Pesan ini akan muncul jika dokumen tidak ditemukan (token tidak valid)
-                    document.body.innerHTML = '<div class="text-center p-8 text-red-500 font-bold">Tautan pelacakan tidak valid atau progres sudah selesai.</div>';
-                  }
-                }, (error) => {
-                  console.error("Error listening to changes:", error);
-                  document.body.innerHTML = '<div class="text-center p-8 text-red-500 font-bold">Terjadi kesalahan saat memuat data.</div>';
-                });
+                    renderTimeline(patientData);
+                } else {
+                    document.body.innerHTML = '<div class="text-center p-8 text-red-500 font-bold">Data pasien tidak ditemukan.</div>';
+                }
+            }, (error) => {
+                console.error("Error listening to changes:", error);
+                document.body.innerHTML = '<div class="text-center p-8 text-red-500 font-bold">Terjadi kesalahan saat memuat data.</div>';
+            });
+        } else {
+            document.body.innerHTML = '<div class="text-center p-8 text-red-500 font-bold">Token tidak valid atau tidak ditemukan.</div>';
+        }
     </script>
 </body>
 </html>
-
-
