@@ -129,7 +129,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // Tahapan statis yang akan ditampilkan di timeline (sudah diperbarui)
+        // Tahapan statis yang akan ditampilkan di timeline
         const allStages = [
             "Pengukuran",
             "Pembuatan Body Model",
@@ -224,13 +224,21 @@
         if (token) {
             const q = query(collection(db, "patients"), where("token", "==", token));
             
+            // Perubahan ada di dalam onSnapshot 👇
             onSnapshot(q, (querySnapshot) => {
                 if (!querySnapshot.empty) {
                     const patientDoc = querySnapshot.docs[0];
                     const patientData = patientDoc.data();
-                    renderTimeline(patientData);
+                    
+                    // Logika baru untuk memeriksa apakah tahapan "Sudah diberikan" sudah ada
+                    const isCompleted = patientData.tahapan?.some(t => t.tahapan === 'Sudah diberikan');
+                    if (isCompleted) {
+                         document.body.innerHTML = '<div class="text-center p-8 text-green-500 font-bold">Progres telah selesai dan alat telah diberikan kepada pasien.</div>';
+                    } else {
+                         renderTimeline(patientData);
+                    }
                 } else {
-                    document.body.innerHTML = '<div class="text-center p-8 text-red-500 font-bold">Data pasien tidak ditemukan.</div>';
+                    document.body.innerHTML = '<div class="text-center p-8 text-red-500 font-bold">Tautan pelacakan tidak valid atau progres sudah selesai.</div>';
                 }
             }, (error) => {
                 console.error("Error listening to changes:", error);
