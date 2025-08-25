@@ -102,7 +102,7 @@
             const patient = patients[selectedPatientIndex];
             document.getElementById('exam').innerText = patient.exam;
             (patient.tahapan?.length ? generateLinkBtn.classList.remove('hidden') : generateLinkBtn.classList.add('hidden'));
-      const stageOptions = ['Pengukuran','Pembuatan Body Model','Pencetakan Alat','Perakitan','Siap Coba','Selesai'];
+      const stageOptions = ['Pengukuran','Pembuatan Body Model','Pencetakan Alat','Perakitan','Siap Coba','Selesai','Sudah diberikan'];
       patient.tahapan.forEach((t, i) => {
               const row = tahapanBody.insertRow();
               row.innerHTML = `
@@ -296,6 +296,7 @@
     </div>
   </body>
 </html>
+
 
 
 
