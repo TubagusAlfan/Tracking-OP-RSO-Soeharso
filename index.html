@@ -180,7 +180,7 @@
               </p>
               <form
                 id="regTrackForm"
-                class="d-flex justify-content-center mt-4"
+                class="d-flex flex-column align-items-center mt-4"
                 onsubmit="return trackByReg(event)"
               >
                 <div class="input-group" style="max-width: 650px">
@@ -1274,6 +1274,71 @@
     <!-- Preloader -->
     <div id="preloader"></div>
 
+    <!-- Captcha Modal -->
+    <div class="modal fade" id="captchaModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Verifikasi</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <p class="mb-2">
+              Ketik ulang kode berikut (huruf besar/kecil berpengaruh):
+            </p>
+            <div class="input-group">
+              <span class="input-group-text">Kode</span>
+              <span
+                class="input-group-text fw-semibold"
+                id="captchaQuestion"
+                aria-live="polite"
+                >ABCdef</span
+              >
+              <button
+                class="btn btn-outline-secondary"
+                type="button"
+                title="Muat ulang captcha"
+                onclick="regenerateCaptcha()"
+              >
+                <i class="bi bi-arrow-clockwise"></i>
+              </button>
+            </div>
+            <input
+              id="captchaAnswer"
+              type="text"
+              class="form-control mt-3"
+              placeholder="Ketik ulang kode di atas"
+              autocomplete="off"
+              autocapitalize="off"
+              spellcheck="false"
+            />
+            <div
+              id="captcha-error"
+              class="text-danger small mt-2"
+              style="display: none"
+            ></div>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Batal
+            </button>
+            <button type="button" class="btn btn-primary" id="captchaSubmitBtn">
+              Verifikasi
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Vendor JS Files -->
     <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script src="assets/vendor/php-email-form/validate.js"></script>
@@ -1298,41 +1363,108 @@
       } catch (e) {
         console.error(e);
       }
-      async function trackByReg(e) {
+      // Captcha popup logic (random letters, case-sensitive)
+      let captchaExpected = null;
+      function generateCaptcha() {
+        const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+        let code = "";
+        for (let i = 0; i < 6; i++) {
+          code += letters.charAt(Math.floor(Math.random() * letters.length));
+        }
+        const qEl = document.getElementById("captchaQuestion");
+        if (qEl) qEl.textContent = code;
+        captchaExpected = code;
+        const ansEl = document.getElementById("captchaAnswer");
+        if (ansEl) ansEl.value = "";
+        const err = document.getElementById("captcha-error");
+        if (err) err.style.display = "none";
+      }
+      function regenerateCaptcha() {
+        generateCaptcha();
+      }
+
+      // Show modal on form submit; do verification after user confirms
+      function trackByReg(e) {
         e.preventDefault();
         const input = document.getElementById("regSearchInput");
+        const reg = (input.value || "").trim();
         const errBox = document.getElementById("track-error");
         errBox.style.display = "none";
-        const reg = (input.value || "").trim();
         if (!reg) return false;
-        if (!trackDb) {
-          errBox.textContent = "Konfigurasi sistem belum siap.";
-          errBox.style.display = "block";
-          return false;
-        }
+        // open modal
         try {
-          const snap = await trackDb.collection("patients").doc(reg).get();
-          if (!snap.exists) {
-            errBox.textContent = "No. order tidak ditemukan.";
-            errBox.style.display = "block";
-            return false;
-          }
-          const data = snap.data();
-          if (!data.token) {
-            errBox.textContent = "Data pasien belum siap dilacak.";
-            errBox.style.display = "block";
-            return false;
-          }
-          window.location.href = `../tracking.html?token=${encodeURIComponent(
-            data.token
-          )}`;
+          generateCaptcha();
+          const modalEl = document.getElementById("captchaModal");
+          const modal = new bootstrap.Modal(modalEl);
+          modal.show();
+          // attach one-time handler for Verify button
+          const btn = document.getElementById("captchaSubmitBtn");
+          const handler = async () => {
+            const answer = String(
+              document.getElementById("captchaAnswer").value || ""
+            ).trim();
+            const err = document.getElementById("captcha-error");
+            if (!answer) {
+              err.textContent = "Mohon isi kode.";
+              err.style.display = "block";
+              return;
+            }
+            if (captchaExpected === null || answer !== captchaExpected) {
+              err.textContent = "Kode salah. Silakan coba lagi.";
+              err.style.display = "block";
+              generateCaptcha();
+              return;
+            }
+            // close modal
+            modal.hide();
+            // proceed to fetch + redirect
+            if (!trackDb) {
+              errBox.textContent = "Konfigurasi sistem belum siap.";
+              errBox.style.display = "block";
+              return;
+            }
+            try {
+              const snap = await trackDb.collection("patients").doc(reg).get();
+              if (!snap.exists) {
+                errBox.textContent = "No. order tidak ditemukan.";
+                errBox.style.display = "block";
+                return;
+              }
+              const data = snap.data();
+              if (!data.token) {
+                errBox.textContent = "Data pasien belum siap dilacak.";
+                errBox.style.display = "block";
+                return;
+              }
+              window.location.href = `../tracking.html?token=${encodeURIComponent(
+                data.token
+              )}`;
+            } catch (errFetch) {
+              console.error(errFetch);
+              errBox.textContent = "Terjadi kesalahan. Coba lagi.";
+              errBox.style.display = "block";
+            }
+          };
+          // ensure previous handlers are removed
+          btn.replaceWith(btn.cloneNode(true));
+          const btnNew = document.getElementById("captchaSubmitBtn");
+          btnNew.addEventListener("click", handler, { once: true });
+          // also submit on Enter inside answer input
+          const ansEl = document.getElementById("captchaAnswer");
+          ansEl.onkeydown = (ev) => {
+            if (ev.key === "Enter") {
+              ev.preventDefault();
+              btnNew.click();
+            }
+          };
         } catch (err) {
           console.error(err);
-          errBox.textContent = "Terjadi kesalahan. Coba lagi.";
+          errBox.textContent = "Gagal membuka verifikasi. Coba lagi.";
           errBox.style.display = "block";
         }
         return false;
       }
+      // no need to generate on DOMContentLoaded; generated when modal opens
     </script>
   </body>
 </html>
