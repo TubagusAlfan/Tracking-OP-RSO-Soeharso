@@ -25,7 +25,6 @@
       }
     </style>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
-    <!-- Firebase (compat same version as login/register) -->
     <script src="https://www.gstatic.com/firebasejs/12.1.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/12.1.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore-compat.js"></script>
@@ -156,7 +155,7 @@
             tahapan:r.querySelector('select').value 
           })); 
           const last = newTahapan.length?newTahapan[newTahapan.length-1].tahapan:'-'; 
-           // Logika baru untuk menghapus token
+            // Logika baru untuk menghapus token
           const updateData = {
             tahapan: newTahapan,
             status: last
@@ -164,7 +163,7 @@
           if (last === 'Sudah diberikan') {
             updateData.token = firebase.firestore.FieldValue.delete();
           }
-        
+          
           try {
             await db.collection('patients').doc(pid).update(updateData);
             alert('Progres berhasil diperbarui.'); // Tambahkan notifikasi
@@ -173,7 +172,43 @@
             alert('Gagal memperbarui progres.');
           }
         }
-  function generateLink(){ if(selectedPatientIndex===-1){alert('Pilih pasien terlebih dahulu!');return;} const patient=patients[selectedPatientIndex]; if(!patient.token){ alert('Token belum tersedia.'); return;} const trackingUrl = `${location.origin}/tracking.html?token=${patient.token}`; prompt('Salin tautan ini:', trackingUrl); }
+  // --- Fungsi generateLink() yang diperbarui ---
+  function generateLink() {
+    if (selectedPatientIndex === -1) {
+      alert('Pilih pasien terlebih dahulu!');
+      return;
+    }
+    const patient = patients[selectedPatientIndex];
+    if (!patient.token) {
+      alert('Token belum tersedia.');
+      return;
+    }
+
+    const trackingUrl = `${location.origin}/tracking.html?token=${patient.token}`;
+
+    const customPopup = document.getElementById('custom-link-popup');
+    const linkInput = document.getElementById('link-to-copy');
+    const copyBtn = document.getElementById('copy-link-btn');
+
+    linkInput.value = trackingUrl;
+    customPopup.classList.remove('hidden');
+
+    copyBtn.onclick = async () => {
+      try {
+        await navigator.clipboard.writeText(trackingUrl);
+        copyBtn.innerText = 'Tersalin!';
+        setTimeout(() => {
+          customPopup.classList.add('hidden');
+          copyBtn.innerText = 'Salin';
+        }, 2000); 
+      } catch (err) {
+        console.error('Gagal menyalin: ', err);
+        alert('Gagal menyalin tautan.');
+      }
+    };
+  }
+  // --- Akhir fungsi yang diperbarui ---
+
   async function deletePatient(ev,id,index){ ev.stopPropagation(); if(!confirm('Yakin hapus pasien ini?')) return; try { await db.collection('patients').doc(id).delete(); if(selectedPatientIndex===index){ selectedPatientIndex=-1; } updateTable(); updateTahapanTable(); } catch(e){ console.error(e); alert('Gagal menghapus pasien.'); } }
   function doLogout(){ auth.signOut().then(()=>{ sessionStorage.setItem('justLoggedOut','1'); window.location.href='login.html'; }); }
   function toggleUserMenu(){ const m=document.getElementById('userMenu'); if(m) m.classList.toggle('hidden'); }
@@ -288,7 +323,32 @@
         </div>
       </div>
     </main>
-
+    
+    <div
+      id="custom-link-popup"
+      class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center hidden"
+    >
+      <div class="bg-white p-6 rounded shadow w-96">
+        <h3 class="text-lg font-bold mb-4">Tautan Pelacakan</h3>
+        <input
+          type="text"
+          id="link-to-copy"
+          class="w-full border px-2 py-1 mb-4"
+          readonly
+        />
+        <div class="flex justify-end gap-2">
+          <button
+            onclick="document.getElementById('custom-link-popup').classList.add('hidden');"
+            class="bg-gray-400 text-white px-4 py-1 rounded"
+          >
+            Tutup
+          </button>
+          <button id="copy-link-btn" class="bg-blue-500 text-white px-4 py-1 rounded">
+            Salin
+          </button>
+        </div>
+      </div>
+    </div>
     <div
       id="form-popup"
       class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center hidden"
@@ -325,6 +385,3 @@
     </div>
   </body>
 </html>
-
-
-
