@@ -1,332 +1,362 @@
 <!DOCTYPE html>
 <html lang="id">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>TRACKING ORTOTIK PROSTETIK RSO SOEHARSO</title>
-    <style>
-      table.layout-fixed {
-        table-layout: fixed;
-        width: 100%;
-      }
-      table th,
-      table td {
-        padding: 0.5rem;
-        text-align: left;
-        border: 1px solid #ccc;
-        vertical-align: top;
-      }
-      table th {
-        background-color: #e5e7eb;
-      }
-      td#exam {
-        white-space: pre-wrap;
-        word-wrap: break-word;
-      }
-    </style>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
-    <!-- Firebase (compat same version as login/register) -->
-    <script src="https://www.gstatic.com/firebasejs/12.1.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/12.1.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore-compat.js"></script>
-    <script src="config-firebase.js"></script>
-    <script>
-      // Auth guard & Firestore logic using compat API
-      (function () {
-        const db = firebase.firestore();
-        const auth = firebase.auth();
-
-  let patients = [];
-  let selectedPatientIndex = -1;
-  let patientFilter = '';
-
-        auth.onAuthStateChanged((user) => {
-          if (!user) {
-            window.location.href = 'login.html';
-            return;
-          }
-          // set display name & initial
-          try {
-            const display = user.displayName || (user.email ? user.email.split('@')[0] : 'User');
-            const nameEl = document.getElementById('userName');
-            const initEl = document.getElementById('userInitial');
-            if (nameEl) nameEl.textContent = display;
-            if (initEl) initEl.textContent = display.charAt(0).toUpperCase();
-          } catch(_) {}
-          // load patients after auth
-          db.collection('patients').onSnapshot((snapshot) => {
-            patients = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
-            updateTable();
-            if (selectedPatientIndex >= 0 && patients.length > 0) {
-              const currentId = patients[selectedPatientIndex]?.id;
-              const found = patients.findIndex((p) => p.id === currentId);
-              selectedPatientIndex = found === -1 ? -1 : found;
-            } else {
-              selectedPatientIndex = -1;
-            }
-            updateTahapanTable();
-          });
-        });
-
-    function updateTable() {
-          const tbody = document.getElementById('patient-table-body');
-          if (!tbody) return;
-          tbody.innerHTML = '';
-          let counter = 0;
-          patients.forEach((p, i) => {
-            const q = patientFilter;
-            const match = !q || (p.reg && p.reg.toLowerCase().includes(q)) || (p.name && p.name.toLowerCase().includes(q));
-            if(!match) return;
-            counter++;
-            const tr = document.createElement('tr');
-            tr.className = `cursor-pointer hover:bg-blue-100 ${i === selectedPatientIndex ? 'bg-blue-200' : ''}`;
-            tr.onclick = () => selectPatient(i);
-            tr.innerHTML = `<td>${counter}</td><td>${p.reg}</td><td>${p.name}</td><td>${p.status || '-'}</td><td><button class='bg-red-500 text-white px-2 py-0.5 rounded text-xs' onclick="deletePatient(event,'${p.id}',${i})">Hapus</button></td>`;
-            tbody.appendChild(tr);
-          });
-          if(counter===0){
-            const tr = document.createElement('tr');
-            tr.innerHTML = `<td colspan="5" class="text-center text-gray-500 py-2">Tidak ada data</td>`;
-            tbody.appendChild(tr);
-          }
-        }
-
-        function setPatientSearch(val){ patientFilter = (val||'').toLowerCase(); updateTable(); }
-
-        function updateTahapanTable() {
-          const tahapanBody = document.getElementById('tahapan-body');
-          const generateLinkBtn = document.getElementById('generate-link-btn');
-          if (!tahapanBody) return;
-          tahapanBody.innerHTML = '';
-          if (selectedPatientIndex >= 0) {
-            const patient = patients[selectedPatientIndex];
-            document.getElementById('exam').innerText = patient.exam;
-            (patient.tahapan?.length ? generateLinkBtn.classList.remove('hidden') : generateLinkBtn.classList.add('hidden'));
-      const stageOptions = ['Pengukuran','Pembuatan Body Model','Pencetakan Alat','Perakitan','Siap Coba','Selesai','Sudah diberikan'];
-      patient.tahapan.forEach((t, i) => {
-              const row = tahapanBody.insertRow();
-              row.innerHTML = `
-                <td>${i + 1}</td>
-                <td><input type="date" value="${t.tanggal}" class="w-full border px-2 py-1"></td>
-                <td><textarea placeholder="Keterangan Tahapan" class="w-full border px-2 py-1">${t.keterangan}</textarea></td>
-                <td>
-                  <select class="w-full border px-2 py-1">
-        ${stageOptions.map(stage => `<option ${t.tahapan===stage?'selected':''}>${stage}</option>`).join('')}
-                  </select>
-                </td>
-                <td><button onclick="deleteRow(this)" class="bg-red-500 text-white px-2 py-1 rounded text-xs">Hapus</button></td>`;
-            });
-          } else {
-            document.getElementById('exam').innerText = '';
-            generateLinkBtn.classList.add('hidden');
-          }
-        }
-
-        function selectPatient(i) { selectedPatientIndex = i; updateTable(); updateTahapanTable(); }
-        function showForm() { document.getElementById('form-popup').classList.remove('hidden'); }
-        function hideForm() { document.getElementById('form-popup').classList.add('hidden'); ['regInput','nameInput','examInput'].forEach(id=>document.getElementById(id).value=''); }
-        function generateSecureToken(length) {
-            const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~";
-            let token = "";
-            for (let i = 0; i < length; i++) {
-                token += charset.charAt(Math.floor(Math.random() * charset.length));
-            }
-            return token;
-        }
-        async function addPatient() {
-          const reg = document.getElementById('regInput').value.trim();
-          const name = document.getElementById('nameInput').value.trim();
-          const exam = document.getElementById('examInput').value.trim();
-            if(!reg||!name||!exam){ alert('Semua data harus diisi!'); return; }
-            const data = { reg,name,exam,status:'-',tahapan:[],token:generateSecureToken(20) };
-            try { await db.collection('patients').doc(reg).set(data); hideForm(); } catch(e){ console.error(e); alert('Gagal menambahkan pasien.'); }
-        }
-  function addRow(){ if(selectedPatientIndex===-1){alert('Pilih pasien terlebih dahulu!');return;} patients[selectedPatientIndex].tahapan.push({tanggal:'',keterangan:'',tahapan:'Pengukuran'}); updateTahapanTable(); }
-        function deleteRow(btn){ const rowIndex = btn.parentNode.parentNode.rowIndex -1; patients[selectedPatientIndex].tahapan.splice(rowIndex,1); updateTahapanTable(); }
-        async function updateProgressStatus(){ 
-          if(selectedPatientIndex===-1){
-            alert('Pilih pasien terlebih dahulu!');
-            return;
-          } 
-          const pid = patients[selectedPatientIndex].id; 
-          const rows=[...document.querySelectorAll('#tahapan-body tr')]; 
-          const newTahapan = rows.map(r=>({ 
-            tanggal:r.querySelector('input[type="date"]').value,
-            keterangan:r.querySelector('textarea').value,
-            tahapan:r.querySelector('select').value 
-          })); 
-          const last = newTahapan.length?newTahapan[newTahapan.length-1].tahapan:'-'; 
-           // Logika baru untuk menghapus token
-          const updateData = {
-            tahapan: newTahapan,
-            status: last
-          };
-          if (last === 'Sudah diberikan') {
-            updateData.token = firebase.firestore.FieldValue.delete();
-          }
-        
-          try {
-            await db.collection('patients').doc(pid).update(updateData);
-            alert('Progres berhasil diperbarui.'); // Tambahkan notifikasi
-          } catch (e) {
-            console.error(e);
-            alert('Gagal memperbarui progres.');
-          }
-        }
-  function generateLink(){ if(selectedPatientIndex===-1){alert('Pilih pasien terlebih dahulu!');return;} const patient=patients[selectedPatientIndex]; if(!patient.token){ alert('Token belum tersedia.'); return;} const trackingUrl = `${location.origin}/tracking.html?token=${patient.token}`; prompt('Salin tautan ini:', trackingUrl); }
-  async function deletePatient(ev,id,index){ ev.stopPropagation(); if(!confirm('Yakin hapus pasien ini?')) return; try { await db.collection('patients').doc(id).delete(); if(selectedPatientIndex===index){ selectedPatientIndex=-1; } updateTable(); updateTahapanTable(); } catch(e){ console.error(e); alert('Gagal menghapus pasien.'); } }
-  function doLogout(){ auth.signOut().then(()=>{ sessionStorage.setItem('justLoggedOut','1'); window.location.href='login.html'; }); }
-  function toggleUserMenu(){ const m=document.getElementById('userMenu'); if(m) m.classList.toggle('hidden'); }
-  function closeUserMenu(){ const m=document.getElementById('userMenu'); if(m) m.classList.add('hidden'); }
-  function openProfile(){ window.location.href='profile.html'; }
-  document.addEventListener('click', (e)=>{ const w=document.getElementById('userMenuWrapper'); if(w && !w.contains(e.target)) closeUserMenu(); });
-
-        // expose
-  window.selectPatient = selectPatient; window.showForm = showForm; window.hideForm = hideForm; window.addPatient=addPatient; window.addRow=addRow; window.deleteRow=deleteRow; window.updateProgressStatus=updateProgressStatus; window.generateLink=generateLink; window.doLogout=doLogout; window.deletePatient=deletePatient; window.toggleUserMenu=toggleUserMenu; window.openProfile=openProfile; window.setPatientSearch=setPatientSearch;
-      })();
-  </script>
-
-    <header class="bg-green-300 p-4 shadow">
-      <div class="flex justify-between items-center">
-        <div class="text-xl font-bold">TRACKING ORTOTIK PROSTETIK SOEHARSO</div>
-        <nav class="flex items-center space-x-4">
-          <div id="userMenuWrapper" class="relative">
-            <button type="button" onclick="toggleUserMenu()" class="flex items-center gap-2 focus:outline-none">
-              <span id="userInitial" class="w-9 h-9 rounded-full bg-gray-300 flex items-center justify-center text-sm font-semibold text-gray-700"></span>
-              <span id="userName" class="text-sm font-medium"></span>
-              <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>
-            </button>
-            <div id="userMenu" class="hidden absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded shadow z-50">
-              <a href="#" onclick="openProfile();return false;" class="block px-4 py-2 text-sm hover:bg-gray-100">Profil</a>
-              <button onclick="doLogout();return false;" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-100">Keluar</button>
-            </div>
-          </div>
-        </nav>
-      </div>
-    </header>
-
-    <main class="p-4">
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div class="col-span-1 md:col-span-1">
-          <div class="bg-white shadow rounded p-4">
-            <div class="flex flex-col gap-2 mb-2">
-              <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
-                <h2 class="font-semibold">Data List Pasien</h2>
-                <button
-                  onclick="showForm()"
-                  class="bg-blue-500 text-white px-2 py-1 text-sm rounded self-start sm:self-auto"
-                >
-                  Tambah
-                </button>
-              </div>
-              <div>
-                <input type="text" oninput="setPatientSearch(this.value)" placeholder="Cari No. Order / Nama..." class="w-full border px-2 py-1 text-sm rounded" />
-              </div>
-            </div>
-            <div class="overflow-x-auto -mx-2 sm:mx-0">
-            <table class="w-full min-w-[520px] text-sm border">
-              <thead>
-                <tr class="bg-gray-200">
-                  <th style="width:5%">No</th>
-                  <th style="width:20%">No. Order</th>
-                  <th style="width:35%">Nama Pasien</th>
-                  <th style="width:25%">Status Progres</th>
-                  <th style="width:15%">Aksi</th>
-                </tr>
-              </thead>
-              <tbody id="patient-table-body"></tbody>
-            </table>
-            </div>
-          </div>
-        </div>
-
-        <div class="col-span-1 md:col-span-2">
-          <div class="bg-white shadow rounded p-4">
-            <h2 class="font-semibold mb-2 text-lg">Progres Alat</h2>
-
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>TRACKING ORTOTIK PROSTETIK RSO SOEHARSO</title>
+  <style>
+    table.layout-fixed {
+      table-layout: fixed;
+      width: 100%;
+    }
+    table th,
+    table td {
+      padding: 0.5rem;
+      text-align: left;
+      border: 1px solid #ccc;
+      vertical-align: top;
+    }
+    table th {
+      background-color: #e5e7eb;
+    }
+    td#exam {
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+  </style>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+    <script src="https://www.gstatic.com/firebasejs/12.1.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.1.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore-compat.js"></script>
+  <script src="config-firebase.js"></script>
+  <script>
+    // Auth guard & Firestore logic using compat API
+    (function () {
+      const db = firebase.firestore();
+      const auth = firebase.auth();
+  let patients = [];
+  let selectedPatientIndex = -1;
+  let patientFilter = '';
+      auth.onAuthStateChanged((user) => {
+        if (!user) {
+          window.location.href = 'login.html';
+          return;
+        }
+        // set display name & initial
+        try {
+          const display = user.displayName || (user.email ? user.email.split('@')[0] : 'User');
+          const nameEl = document.getElementById('userName');
+          const initEl = document.getElementById('userInitial');
+          if (nameEl) nameEl.textContent = display;
+          if (initEl) initEl.textContent = display.charAt(0).toUpperCase();
+        } catch(_) {}
+        // load patients after auth
+        db.collection('patients').onSnapshot((snapshot) => {
+          patients = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+          updateTable();
+          if (selectedPatientIndex >= 0 && patients.length > 0) {
+            const currentId = patients[selectedPatientIndex]?.id;
+            const found = patients.findIndex((p) => p.id === currentId);
+            selectedPatientIndex = found === -1 ? -1 : found;
+          } else {
+            selectedPatientIndex = -1;
+          }
+          updateTahapanTable();
+        });
+      });
+    function updateTable() {
+          const tbody = document.getElementById('patient-table-body');
+          if (!tbody) return;
+          tbody.innerHTML = '';
+          let counter = 0;
+          patients.forEach((p, i) => {
+            const q = patientFilter;
+            const match = !q || (p.reg && p.reg.toLowerCase().includes(q)) || (p.name && p.name.toLowerCase().includes(q));
+            if(!match) return;
+            counter++;
+            const tr = document.createElement('tr');
+            tr.className = `cursor-pointer hover:bg-blue-100 ${i === selectedPatientIndex ? 'bg-blue-200' : ''}`;
+            tr.onclick = () => selectPatient(i);
+            tr.innerHTML = `<td>${counter}</td><td>${p.reg}</td><td>${p.name}</td><td>${p.status || '-'}</td><td><button class='bg-red-500 text-white px-2 py-0.5 rounded text-xs' onclick="deletePatient(event,'${p.id}',${i})">Hapus</button></td>`;
+            tbody.appendChild(tr);
+          });
+          if(counter===0){
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td colspan="5" class="text-center text-gray-500 py-2">Tidak ada data</td>`;
+            tbody.appendChild(tr);
+          }
+        }
+        function setPatientSearch(val){ patientFilter = (val||'').toLowerCase(); updateTable(); }
+        function updateTahapanTable() {
+          const tahapanBody = document.getElementById('tahapan-body');
+          const generateLinkBtn = document.getElementById('generate-link-btn');
+          if (!tahapanBody) return;
+          tahapanBody.innerHTML = '';
+          if (selectedPatientIndex >= 0) {
+            const patient = patients[selectedPatientIndex];
+            document.getElementById('exam').innerText = patient.exam;
+            (patient.tahapan?.length ? generateLinkBtn.classList.remove('hidden') : generateLinkBtn.classList.add('hidden'));
+      const stageOptions = ['Pengukuran','Pembuatan Body Model','Pencetakan Alat','Perakitan','Siap Coba','Selesai','Sudah diberikan'];
+      patient.tahapan.forEach((t, i) => {
+              const row = tahapanBody.insertRow();
+              row.innerHTML = `
+                <td>${i + 1}</td>
+                <td><input type="date" value="${t.tanggal}" class="w-full border px-2 py-1"></td>
+                <td><textarea placeholder="Keterangan Tahapan" class="w-full border px-2 py-1">${t.keterangan}</textarea></td>
+                <td>
+                  <select class="w-full border px-2 py-1">
+        ${stageOptions.map(stage => `<option ${t.tahapan===stage?'selected':''}>${stage}</option>`).join('')}
+                  </select>
+                </td>
+                <td><button onclick="deleteRow(this)" class="bg-red-500 text-white px-2 py-1 rounded text-xs">Hapus</button></td>`;
+            });
+          } else {
+            document.getElementById('exam').innerText = '';
+            generateLinkBtn.classList.add('hidden');
+          }
+        }
+        function selectPatient(i) { selectedPatientIndex = i; updateTable(); updateTahapanTable(); }
+        function showForm() { document.getElementById('form-popup').classList.remove('hidden'); }
+        function hideForm() { document.getElementById('form-popup').classList.add('hidden'); ['regInput','nameInput','examInput'].forEach(id=>document.getElementById(id).value=''); }
+        function generateSecureToken(length) {
+            const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~";
+            let token = "";
+            for (let i = 0; i < length; i++) {
+                token += charset.charAt(Math.floor(Math.random() * charset.length));
+            }
+            return token;
+        }
+        async function addPatient() {
+          const reg = document.getElementById('regInput').value.trim();
+          const name = document.getElementById('nameInput').value.trim();
+          const exam = document.getElementById('examInput').value.trim();
+            if(!reg||!name||!exam){ alert('Semua data harus diisi!'); return; }
+            const data = { reg,name,exam,status:'-',tahapan:[],token:generateSecureToken(20) };
+            try { await db.collection('patients').doc(reg).set(data); hideForm(); } catch(e){ console.error(e); alert('Gagal menambahkan pasien.'); }
+        }
+  function addRow(){ if(selectedPatientIndex===-1){alert('Pilih pasien terlebih dahulu!');return;} patients[selectedPatientIndex].tahapan.push({tanggal:'',keterangan:'',tahapan:'Pengukuran'}); updateTahapanTable(); }
+        function deleteRow(btn){ const rowIndex = btn.parentNode.parentNode.rowIndex -1; patients[selectedPatientIndex].tahapan.splice(rowIndex,1); updateTahapanTable(); }
+        async function updateProgressStatus(){ 
+          if(selectedPatientIndex===-1){
+            alert('Pilih pasien terlebih dahulu!');
+            return;
+          } 
+          const pid = patients[selectedPatientIndex].id; 
+          const rows=[...document.querySelectorAll('#tahapan-body tr')]; 
+          const newTahapan = rows.map(r=>({ 
+            tanggal:r.querySelector('input[type="date"]').value,
+            keterangan:r.querySelector('textarea').value,
+            tahapan:r.querySelector('select').value 
+          })); 
+          const last = newTahapan.length?newTahapan[newTahapan.length-1].tahapan:'-'; 
+           // Logika baru untuk menghapus token
+          const updateData = {
+            tahapan: newTahapan,
+            status: last
+          };
+          if (last === 'Sudah diberikan') {
+            updateData.token = firebase.firestore.FieldValue.delete();
+          }
+        
+          try {
+            await db.collection('patients').doc(pid).update(updateData);
+            alert('Progres berhasil diperbarui.'); // Tambahkan notifikasi
+          } catch (e) {
+            console.error(e);
+            alert('Gagal memperbarui progres.');
+          }
+        }
+  
+        // Fungsi baru untuk pop-up link
+        function showLinkPopup(link) {
+          const popup = document.getElementById('link-popup');
+          const input = document.getElementById('linkInput');
+          input.value = link;
+          popup.classList.remove('hidden');
+        }
+        function hideLinkPopup() {
+          const popup = document.getElementById('link-popup');
+          popup.classList.add('hidden');
+        }
+        function copyLink() {
+          const linkInput = document.getElementById('linkInput');
+          linkInput.select();
+          linkInput.setSelectionRange(0, 99999);
+          navigator.clipboard.writeText(linkInput.value)
+            .then(() => {
+              alert('Tautan berhasil disalin!');
+            })
+            .catch(err => {
+              console.error('Gagal menyalin teks: ', err);
+            });
+        }
+        
+        function generateLink(){
+          if(selectedPatientIndex===-1){alert('Pilih pasien terlebih dahulu!');return;}
+          const patient=patients[selectedPatientIndex];
+          if(!patient.token){ alert('Token belum tersedia.'); return;}
+          const trackingUrl = `${location.origin}/tracking.html?token=${patient.token}`;
+          
+          // Memanggil fungsi baru untuk menampilkan pop-up kustom
+          showLinkPopup(trackingUrl);
+        }
+  async function deletePatient(ev,id,index){ ev.stopPropagation(); if(!confirm('Yakin hapus pasien ini?')) return; try { await db.collection('patients').doc(id).delete(); if(selectedPatientIndex===index){ selectedPatientIndex=-1; } updateTable(); updateTahapanTable(); } catch(e){ console.error(e); alert('Gagal menghapus pasien.'); } }
+  function doLogout(){ auth.signOut().then(()=>{ sessionStorage.setItem('justLoggedOut','1'); window.location.href='login.html'; }); }
+  function toggleUserMenu(){ const m=document.getElementById('userMenu'); if(m) m.classList.toggle('hidden'); }
+  function closeUserMenu(){ const m=document.getElementById('userMenu'); if(m) m.classList.add('hidden'); }
+  function openProfile(){ window.location.href='profile.html'; }
+  document.addEventListener('click', (e)=>{ const w=document.getElementById('userMenuWrapper'); if(w && !w.contains(e.target)) closeUserMenu(); });
+        // expose
+  window.selectPatient = selectPatient; window.showForm = showForm; window.hideForm = hideForm; window.addPatient=addPatient; window.addRow=addRow; window.deleteRow=deleteRow; window.updateProgressStatus=updateProgressStatus; window.generateLink=generateLink; window.doLogout=doLogout; window.deletePatient=deletePatient; window.toggleUserMenu=toggleUserMenu; window.openProfile=openProfile; window.setPatientSearch=setPatientSearch; window.showLinkPopup = showLinkPopup; window.hideLinkPopup = hideLinkPopup; window.copyLink = copyLink;
+      })();
+  </script>
+    <header class="bg-green-300 p-4 shadow">
+      <div class="flex justify-between items-center">
+        <div class="text-xl font-bold">TRACKING ORTOTIK PROSTETIK SOEHARSO</div>
+        <nav class="flex items-center space-x-4">
+          <div id="userMenuWrapper" class="relative">
+            <button type="button" onclick="toggleUserMenu()" class="flex items-center gap-2 focus:outline-none">
+              <span id="userInitial" class="w-9 h-9 rounded-full bg-gray-300 flex items-center justify-center text-sm font-semibold text-gray-700"></span>
+              <span id="userName" class="text-sm font-medium"></span>
+              <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div id="userMenu" class="hidden absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded shadow z-50">
+              <a href="#" onclick="openProfile();return false;" class="block px-4 py-2 text-sm hover:bg-gray-100">Profil</a>
+              <button onclick="doLogout();return false;" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-100">Keluar</button>
+            </div>
+          </div>
+        </nav>
+      </div>
+    </header>
+    <main class="p-4">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="col-span-1 md:col-span-1">
+          <div class="bg-white shadow rounded p-4">
+            <div class="flex flex-col gap-2 mb-2">
+              <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+                <h2 class="font-semibold">Data List Pasien</h2>
+                <button
+                  onclick="showForm()"
+                  class="bg-blue-500 text-white px-2 py-1 text-sm rounded self-start sm:self-auto"
+                >
+                  Tambah
+                </button>
+              </div>
+              <div>
+                <input type="text" oninput="setPatientSearch(this.value)" placeholder="Cari No. Order / Nama..." class="w-full border px-2 py-1 text-sm rounded" />
+              </div>
+            </div>
+            <div class="overflow-x-auto -mx-2 sm:mx-0">
+            <table class="w-full min-w-[520px] text-sm border">
+              <thead>
+                <tr class="bg-gray-200">
+                  <th style="width:5%">No</th>
+                  <th style="width:20%">No. Order</th>
+                  <th style="width:35%">Nama Pasien</th>
+                  <th style="width:25%">Status Progres</th>
+                  <th style="width:15%">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="patient-table-body"></tbody>
+            </table>
+            </div>
+          </div>
+        </div>
+        <div class="col-span-1 md:col-span-2">
+          <div class="bg-white shadow rounded p-4">
+            <h2 class="font-semibold mb-2 text-lg">Progres Alat</h2>
+            <div class="mb-4">
+              <p><strong>Nama Alat:</strong> <span id="exam"></span></p>
+            </div>
+            <div class="overflow-x-auto -mx-2 sm:mx-0 mb-2">
+            <table class="layout-fixed w-full min-w-[640px] text-sm border">
+              <thead>
+                <tr>
+                  <th style="width: 5%">No</th>
+                  <th style="width: 15%">Tanggal</th>
+                  <th style="width: 40%">Keterangan Tahapan</th>
+                  <th style="width: 20%">Tahapan</th>
+                  <th style="width: 10%">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="tahapan-body"></tbody>
+            </table>
+            </div>
+            <div class="flex gap-2">
+              <button
+                onclick="updateProgressStatus()"
+                class="bg-green-500 text-white px-4 py-1 rounded"
+              >
+                Simpan
+              </button>
+              <button
+                onclick="addRow()"
+                class="bg-blue-300 text-white px-4 py-1 rounded flex items-center gap-1"
+              >
+                <span>➕</span>Tambah
+              </button>
+              <button
+                id="generate-link-btn"
+                onclick="generateLink()"
+                class="bg-purple-500 text-white px-4 py-1 rounded hidden"
+              >
+                Generate Link
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+    <div
+      id="form-popup"
+      class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center hidden"
+    >
+      <div class="bg-white p-6 rounded shadow w-96">
+        <h3 class="text-lg font-bold mb-4">Tambah Pasien</h3>
+        <div class="mb-2">
+          <label class="block text-sm">No. Order</label>
+          <input type="text" id="regInput" class="w-full border px-2 py-1" />
+        </div>
+        <div class="mb-2">
+          <label class="block text-sm">Nama Pasien</label>
+          <input type="text" id="nameInput" class="w-full border px-2 py-1" />
+        </div>
+        <div class="mb-4">
+          <label class="block text-sm">Nama Alat</label>
+          <input type="text" id="examInput" class="w-full border px-2 py-1" />
+        </div>
+        <div class="flex justify-end gap-2">
+          <button
+            onclick="hideForm()"
+            class="bg-gray-400 text-white px-4 py-1 rounded"
+          >
+            Batal
+          </button>
+          <button
+            onclick="addPatient()"
+            class="bg-green-500 text-white px-4 py-1 rounded"
+          >
+            Simpan
+          </button>
+        </div>
+      </div>
+    </div>
+    <div id="link-popup" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center hidden">
+        <div class="bg-white p-6 rounded shadow w-96">
+            <h3 class="text-lg font-bold mb-4">Tautan Pelacakan</h3>
             <div class="mb-4">
-              <p><strong>Nama Alat:</strong> <span id="exam"></span></p>
+                <label class="block text-sm">Salin tautan ini:</label>
+                <input type="text" id="linkInput" class="w-full border px-2 py-1" readonly />
             </div>
-
-            <div class="overflow-x-auto -mx-2 sm:mx-0 mb-2">
-            <table class="layout-fixed w-full min-w-[640px] text-sm border">
-              <thead>
-                <tr>
-                  <th style="width: 5%">No</th>
-                  <th style="width: 15%">Tanggal</th>
-                  <th style="width: 40%">Keterangan Tahapan</th>
-                  <th style="width: 20%">Tahapan</th>
-                  <th style="width: 10%">Aksi</th>
-                </tr>
-              </thead>
-              <tbody id="tahapan-body"></tbody>
-            </table>
+            <div class="flex justify-end gap-2">
+                <button onclick="copyLink()" class="bg-purple-500 text-white px-4 py-2 rounded">
+                    Copy
+                </button>
+                <button onclick="hideLinkPopup()" class="bg-gray-400 text-white px-4 py-2 rounded">
+                    Tutup
+                </button>
             </div>
-
-            <div class="flex gap-2">
-              <button
-                onclick="updateProgressStatus()"
-                class="bg-green-500 text-white px-4 py-1 rounded"
-              >
-                Simpan
-              </button>
-              <button
-                onclick="addRow()"
-                class="bg-blue-300 text-white px-4 py-1 rounded flex items-center gap-1"
-              >
-                <span>➕</span>Tambah
-              </button>
-              <button
-                id="generate-link-btn"
-                onclick="generateLink()"
-                class="bg-purple-500 text-white px-4 py-1 rounded hidden"
-              >
-                Generate Link
-              </button>
-            </div>
-          </div>
         </div>
-      </div>
-    </main>
-
-    <div
-      id="form-popup"
-      class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center hidden"
-    >
-      <div class="bg-white p-6 rounded shadow w-96">
-        <h3 class="text-lg font-bold mb-4">Tambah Pasien</h3>
-        <div class="mb-2">
-          <label class="block text-sm">No. Order</label>
-          <input type="text" id="regInput" class="w-full border px-2 py-1" />
-        </div>
-        <div class="mb-2">
-          <label class="block text-sm">Nama Pasien</label>
-          <input type="text" id="nameInput" class="w-full border px-2 py-1" />
-        </div>
-        <div class="mb-4">
-          <label class="block text-sm">Nama Alat</label>
-          <input type="text" id="examInput" class="w-full border px-2 py-1" />
-        </div>
-        <div class="flex justify-end gap-2">
-          <button
-            onclick="hideForm()"
-            class="bg-gray-400 text-white px-4 py-1 rounded"
-          >
-            Batal
-          </button>
-          <button
-            onclick="addPatient()"
-            class="bg-green-500 text-white px-4 py-1 rounded"
-          >
-            Simpan
-          </button>
-        </div>
-      </div>
     </div>
-  </body>
+  </body>
 </html>
-
-
-
-
-
