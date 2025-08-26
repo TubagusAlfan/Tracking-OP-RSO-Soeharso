@@ -135,10 +135,8 @@
         font-size: 0.95rem;
       }
     </style>
-  </head>
+  </head>  
 
-  <body class="cover-page">
-   
     <header id="header" class="header d-flex align-items-center fixed-top">
       <div
         class="container-fluid container-xl position-relative d-flex align-items-center justify-content-between"
@@ -1386,6 +1384,39 @@
         });
       }
 
+      async function proceedAfterCaptcha(token, reg, modal, errBox) {
+        try {
+          // Optional: send token to server for verification before proceeding.
+          modal.hide();
+          if (!trackDb) {
+            errBox.textContent = "Konfigurasi sistem belum siap.";
+            errBox.style.display = "block";
+            return;
+          }
+          try {
+            const snap = await trackDb.collection("patients").doc(reg).get();
+            if (!snap.exists) {
+              errBox.textContent = "No. order tidak ditemukan.";
+              errBox.style.display = "block";
+              return;
+            }
+            const data = snap.data();
+            if (!data.token) {
+              errBox.textContent = "Data pasien belum siap dilacak.";
+              errBox.style.display = "block";
+              return;
+            }
+            window.location.href = `../tracking.html?token=${encodeURIComponent(data.token)}`;
+          } catch (errFetch) {
+            console.error(errFetch);
+            errBox.textContent = "Terjadi kesalahan. Coba lagi.";
+            errBox.style.display = "block";
+          }
+        } catch (vErr) {
+          console.error(vErr);
+        }
+      }
+
       // Show modal on form submit; run reCAPTCHA Enterprise before fetch + redirect
       function trackByReg(e) {
         e.preventDefault();
@@ -1420,7 +1451,18 @@
                     "recaptchaContainer",
                     {
                       sitekey: RECAPTCHA_SITE_KEY,
-                      action: "LOGIN",
+                      theme: "light",
+                      size: "normal",
+                      callback: function (token) {
+                        // Auto-continue once user solves the challenge (may show image selection)
+                        proceedAfterCaptcha(token, reg, modal, errBox);
+                      },
+                      'expired-callback': function () {
+                        if (errEl) {
+                          errEl.textContent = "Sesi reCAPTCHA kedaluwarsa. Mohon verifikasi ulang.";
+                          errEl.style.display = "block";
+                        }
+                      }
                     }
                   );
                 } else {
@@ -1464,37 +1506,8 @@
                 }
                 return;
               }
-              // close modal and continue
-              modal.hide();
-              if (!trackDb) {
-                errBox.textContent = "Konfigurasi sistem belum siap.";
-                errBox.style.display = "block";
-                return;
-              }
-              try {
-                const snap = await trackDb
-                  .collection("patients")
-                  .doc(reg)
-                  .get();
-                if (!snap.exists) {
-                  errBox.textContent = "No. order tidak ditemukan.";
-                  errBox.style.display = "block";
-                  return;
-                }
-                const data = snap.data();
-                if (!data.token) {
-                  errBox.textContent = "Data pasien belum siap dilacak.";
-                  errBox.style.display = "block";
-                  return;
-                }
-                window.location.href = `../tracking.html?token=${encodeURIComponent(
-                  data.token
-                )}`;
-              } catch (errFetch) {
-                console.error(errFetch);
-                errBox.textContent = "Terjadi kesalahan. Coba lagi.";
-                errBox.style.display = "block";
-              }
+              // Continue using the same flow as the auto-callback
+              await proceedAfterCaptcha(token, reg, modal, errBox);
             } catch (vErr) {
               console.error(vErr);
               if (errEl) {
