@@ -81,12 +81,7 @@
             const tr = document.createElement('tr');
             tr.className = `cursor-pointer hover:bg-blue-100 ${i === selectedPatientIndex ? 'bg-blue-200' : ''}`;
             tr.onclick = () => selectPatient(i);
-            tr.innerHTML = `<td>${counter}</td><td>${p.reg}</td><td>${p.name}</td><td>${p.status || '-'}</td><td>
-                <div class="flex gap-1">
-                    <button class='bg-blue-500 text-white px-2 py-0.5 rounded text-xs' onclick="showEditForm(event, '${p.id}')">Edit</button>
-                    <button class='bg-red-500 text-white px-2 py-0.5 rounded text-xs' onclick="deletePatient(event, '${p.id}', ${i})">Hapus</button>
-                </div>
-              </td>`;
+            tr.innerHTML = `<td>${counter}</td><td>${p.reg}</td><td>${p.name}</td><td>${p.status || '-'}</td><td><button class='bg-blue-500 text-white px-2 py-0.5 rounded text-xs' onclick="showEditForm(event, '${p.id}')">Edit</button></td>`;
             tbody.appendChild(tr);
           });
           if (counter === 0) {
@@ -248,24 +243,6 @@
           };
         }
         // --- Akhir fungsi yang diperbarui ---
-        
-        // Fungsi HAPUS PERMANEN (diaktifkan lagi)
-        async function deletePatient(ev, id, index) {
-            ev.stopPropagation(); 
-            if (!confirm('Yakin hapus pasien ini secara PERMANEN?')) return; 
-            try {
-                await db.collection('patients').doc(id).delete(); 
-                if (selectedPatientIndex === index) { 
-                    selectedPatientIndex = -1;
-                }
-                updateTable();
-                updateTahapanTable();
-                alert('Pasien berhasil dihapus secara permanen.');
-            } catch (e) {
-                console.error(e);
-                alert('Gagal menghapus pasien.');
-            }
-        }
 
         // Fungsi baru untuk menampilkan pop-up edit
         function showEditForm(ev, id) {
@@ -375,8 +352,6 @@
         window.showEditForm = showEditForm;
         window.updatePatient = updatePatient;
         window.deleteFromList = deleteFromList;
-        // Expose fungsi deletePatient yang dikembalikan
-        window.deletePatient = deletePatient;
       })();
     </script>
 
