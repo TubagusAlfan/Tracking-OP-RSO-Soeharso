@@ -38,6 +38,7 @@
         let patients = [];
         let selectedPatientIndex = -1;
         let patientFilter = '';
+        let currentEditId = null; // Variabel global untuk menyimpan ID pasien yang diedit
 
         auth.onAuthStateChanged((user) => {
           if (!user) {
@@ -53,7 +54,7 @@
             if (initEl) initEl.textContent = display.charAt(0).toUpperCase();
           } catch (_) {}
           // load patients after auth
-          db.collection('patients').where('is_deleted', '==', false).onSnapshot((snapshot) => {
+          db.collection('patients').onSnapshot((snapshot) => {
             patients = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
             updateTable();
             if (selectedPatientIndex >= 0 && patients.length > 0) {
@@ -80,7 +81,7 @@
             const tr = document.createElement('tr');
             tr.className = `cursor-pointer hover:bg-blue-100 ${i === selectedPatientIndex ? 'bg-blue-200' : ''}`;
             tr.onclick = () => selectPatient(i);
-            tr.innerHTML = `<td>${counter}</td><td>${p.reg}</td><td>${p.name}</td><td>${p.status || '-'}</td><td><button class='bg-red-500 text-white px-2 py-0.5 rounded text-xs' onclick="deletePatient(event, '${p.id}', ${i})">Hapus</button></td>`;
+            tr.innerHTML = `<td>${counter}</td><td>${p.reg}</td><td>${p.name}</td><td>${p.status || '-'}</td><td><button class='bg-blue-500 text-white px-2 py-0.5 rounded text-xs' onclick="showEditForm(event, '${p.id}')">Edit</button></td>`;
             tbody.appendChild(tr);
           });
           if (counter === 0) {
@@ -154,7 +155,7 @@
             alert('Semua data harus diisi!');
             return;
           }
-          const data = { reg, name, exam, status: '-', tahapan: [], token: generateSecureToken(20), is_deleted: false };
+          const data = { reg, name, exam, status: '-', tahapan: [], token: generateSecureToken(20) };
           try {
             await db.collection('patients').doc(reg).set(data);
             hideForm();
@@ -242,17 +243,70 @@
           };
         }
         // --- Akhir fungsi yang diperbarui ---
-        
-        async function deletePatient(ev, id) {
-            ev.stopPropagation(); 
-            if (!confirm('Yakin hapus pasien ini dari daftar?')) return; 
-            try {
-                await db.collection('patients').doc(id).update({ is_deleted: true }); 
-                alert('Pasien berhasil dihapus.');
-            } catch (e) {
-                console.error(e);
-                alert('Gagal menghapus pasien.');
-            }
+
+        // Fungsi baru untuk menampilkan pop-up edit
+        function showEditForm(ev, id) {
+          ev.stopPropagation(); // Mencegah baris tabel terpilih
+
+          const patientToEdit = patients.find((p) => p.id === id);
+          if (!patientToEdit) {
+            alert('Pasien tidak ditemukan!');
+            return;
+          }
+          currentEditId = id; // Simpan ID pasien yang sedang diedit
+
+          // Isi form dengan data pasien yang dipilih
+          document.getElementById('editRegInput').value = patientToEdit.reg;
+          document.getElementById('editNameInput').value = patientToEdit.name;
+          document.getElementById('editExamInput').value = patientToEdit.exam;
+
+          // Tampilkan pop-up
+          document.getElementById('edit-popup').classList.remove('hidden');
+        }
+
+        // Fungsi baru untuk menyimpan perubahan ke database
+        async function updatePatient() {
+          if (!currentEditId) return;
+
+          const newReg = document.getElementById('editRegInput').value.trim();
+          const newName = document.getElementById('editNameInput').value.trim();
+          const newExam = document.getElementById('editExamInput').value.trim();
+
+          if (!newReg || !newName || !newExam) {
+            alert('Semua data harus diisi!');
+            return;
+          }
+
+          try {
+            await db.collection('patients').doc(currentEditId).update({
+              reg: newReg,
+              name: newName,
+              exam: newExam,
+            });
+
+            alert('Data pasien berhasil diperbarui.');
+            document.getElementById('edit-popup').classList.add('hidden');
+            currentEditId = null;
+          } catch (e) {
+            console.error(e);
+            alert('Gagal memperbarui data pasien.');
+          }
+        }
+
+        // Fungsi baru untuk menghapus pasien hanya dari tampilan lokal
+        function deleteFromList() {
+          if (!currentEditId) return;
+
+          const patientIndex = patients.findIndex((p) => p.id === currentEditId);
+          if (patientIndex > -1) {
+            patients.splice(patientIndex, 1);
+            selectedPatientIndex = -1; // Batalkan pemilihan pasien
+            updateTable();
+            updateTahapanTable();
+            alert('Pasien berhasil dihapus dari daftar (tampilan).');
+            document.getElementById('edit-popup').classList.add('hidden');
+            currentEditId = null;
+          }
         }
 
         function doLogout() {
@@ -291,10 +345,13 @@
         window.updateProgressStatus = updateProgressStatus;
         window.generateLink = generateLink;
         window.doLogout = doLogout;
-        window.deletePatient = deletePatient;
         window.toggleUserMenu = toggleUserMenu;
         window.openProfile = openProfile;
         window.setPatientSearch = setPatientSearch;
+        // Expose fungsi-fungsi baru
+        window.showEditForm = showEditForm;
+        window.updatePatient = updatePatient;
+        window.deleteFromList = deleteFromList;
       })();
     </script>
 
@@ -435,6 +492,43 @@
           <button onclick="addPatient()" class="bg-green-500 text-white px-4 py-1 rounded">
             Simpan
           </button>
+        </div>
+      </div>
+    </div>
+    
+    <div
+      id="edit-popup"
+      class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center hidden"
+    >
+      <div class="bg-white p-6 rounded shadow w-96">
+        <h3 class="text-lg font-bold mb-4">Edit Pasien</h3>
+        <div class="mb-2">
+          <label class="block text-sm">No. Order</label>
+          <input type="text" id="editRegInput" class="w-full border px-2 py-1" />
+        </div>
+        <div class="mb-2">
+          <label class="block text-sm">Nama Pasien</label>
+          <input type="text" id="editNameInput" class="w-full border px-2 py-1" />
+        </div>
+        <div class="mb-4">
+          <label class="block text-sm">Nama Alat</label>
+          <input type="text" id="editExamInput" class="w-full border px-2 py-1" />
+        </div>
+        <div class="flex justify-between items-center gap-2 mt-4">
+          <button onclick="deleteFromList()" class="bg-red-500 text-white px-4 py-1 rounded">
+            Hapus dari Daftar
+          </button>
+          <div class="flex gap-2">
+            <button
+              onclick="document.getElementById('edit-popup').classList.add('hidden');"
+              class="bg-gray-400 text-white px-4 py-1 rounded"
+            >
+              Batal
+            </button>
+            <button onclick="updatePatient()" class="bg-green-500 text-white px-4 py-1 rounded">
+              Simpan
+            </button>
+          </div>
         </div>
       </div>
     </div>
