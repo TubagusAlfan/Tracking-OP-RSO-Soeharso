@@ -293,22 +293,6 @@
           }
         }
 
-        // Fungsi baru untuk menghapus pasien hanya dari tampilan lokal
-        function deleteFromList() {
-          if (!currentEditId) return;
-
-          const patientIndex = patients.findIndex((p) => p.id === currentEditId);
-          if (patientIndex > -1) {
-            patients.splice(patientIndex, 1);
-            selectedPatientIndex = -1; // Batalkan pemilihan pasien
-            updateTable();
-            updateTahapanTable();
-            alert('Pasien berhasil dihapus dari daftar (tampilan).');
-            document.getElementById('edit-popup').classList.add('hidden');
-            currentEditId = null;
-          }
-        }
-
         function doLogout() {
           auth.signOut().then(() => {
             sessionStorage.setItem('justLoggedOut', '1');
@@ -351,7 +335,6 @@
         // Expose fungsi-fungsi baru
         window.showEditForm = showEditForm;
         window.updatePatient = updatePatient;
-        window.deleteFromList = deleteFromList;
       })();
     </script>
 
@@ -514,21 +497,16 @@
           <label class="block text-sm">Nama Alat</label>
           <input type="text" id="editExamInput" class="w-full border px-2 py-1" />
         </div>
-        <div class="flex justify-between items-center gap-2 mt-4">
-          <button onclick="deleteFromList()" class="bg-red-500 text-white px-4 py-1 rounded">
-            Hapus dari Daftar
+        <div class="flex justify-end gap-2 mt-4">
+          <button
+            onclick="document.getElementById('edit-popup').classList.add('hidden');"
+            class="bg-gray-400 text-white px-4 py-1 rounded"
+          >
+            Batal
           </button>
-          <div class="flex gap-2">
-            <button
-              onclick="document.getElementById('edit-popup').classList.add('hidden');"
-              class="bg-gray-400 text-white px-4 py-1 rounded"
-            >
-              Batal
-            </button>
-            <button onclick="updatePatient()" class="bg-green-500 text-white px-4 py-1 rounded">
-              Simpan
-            </button>
-          </div>
+          <button onclick="updatePatient()" class="bg-green-500 text-white px-4 py-1 rounded">
+            Simpan
+          </button>
         </div>
       </div>
     </div>
